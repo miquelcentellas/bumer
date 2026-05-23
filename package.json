@@ -1,0 +1,19 @@
+{
+  "name": "bumer-monorepo",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Búmer Cognitive Training Engine Monorepo",
+  "scripts": {
+    "dev:front": "pnpm --filter web-front dev",
+    "dev:back": "pnpm --filter backend-engine dev",
+    "dev": "concurrently -n \"BACKEND,FRONTEND\" -c \"cyan,magenta\" \"pnpm run dev:back\" \"pnpm run dev:front\"",
+    "build:types": "pnpm --filter shared-types build",
+    "build:back": "pnpm --filter backend-engine build",
+    "build:front": "pnpm --filter web-front build",
+    "build": "pnpm run build:types && pnpm run build:back && pnpm run build:front"
+  },
+  "devDependencies": {
+    "concurrently": "^8.2.2",
+    "typescript": "^5.3.3"
+  }
+}

@@ -1,0 +1,858 @@
+@use 'sass:color';
+@import 'variables';
+@import 'mixins';
+
+// Simulator wrapper (centers phone mockup on desktop screen)
+.bumer-dashboard {
+  min-height: 100vh;
+  background-color: $bumer-bg;
+  background-image: radial-gradient(circle at top right, rgba(79, 70, 229, 0.15), transparent 40%),
+                    radial-gradient(circle at bottom left, rgba(16, 185, 129, 0.05), transparent 40%);
+  font-family: $font-main;
+  color: $bumer-text;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 2rem;
+  overflow: hidden;
+
+  @media (max-width: 520px) {
+    padding: 0;
+    align-items: stretch;
+  }
+}
+
+// Side control panel (hidden for mobile-only prototype)
+.bumer-control-panel {
+  display: none;
+
+  .panel-header {
+    background: linear-gradient(135deg, $bumer-card 0%, darken($bumer-card, 4%) 100%);
+    border: 1px solid $bumer-border;
+    border-radius: 16px;
+    padding: 1.5rem;
+    @include card-shadow;
+
+    h1 {
+      margin: 0;
+      font-size: 1.8rem;
+      font-weight: 800;
+      letter-spacing: -0.5px;
+      background: linear-gradient(90deg, #818CF8, #34D399);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+    }
+
+    p {
+      color: $bumer-text-muted;
+      font-size: 0.9rem;
+      line-height: 1.4;
+      margin-top: 0.5rem;
+      margin-bottom: 0;
+    }
+  }
+
+  .level-picker-card {
+    background: $bumer-card;
+    border: 1px solid $bumer-border;
+    border-radius: 16px;
+    padding: 1.5rem;
+    @include card-shadow;
+
+    h2 {
+      margin-top: 0;
+      font-size: 1.1rem;
+      font-weight: 600;
+      margin-bottom: 1rem;
+      color: $bumer-text;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    .level-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 0.75rem;
+
+      .level-btn {
+        background: darken($bumer-card, 6%);
+        border: 1px solid $bumer-border;
+        border-radius: 10px;
+        color: $bumer-text-muted;
+        font-weight: 700;
+        padding: 0.75rem 0;
+        cursor: pointer;
+        transition: $transition-smooth;
+        font-size: 1rem;
+
+        &:hover {
+          color: $bumer-text;
+          border-color: color.adjust($bumer-border, $lightness: 10%);
+          background: darken($bumer-card, 3%);
+        }
+
+        &.active {
+          background: $bumer-primary;
+          color: #FFFFFF;
+          border-color: color.adjust($bumer-primary, $lightness: 10%);
+          @include card-shadow;
+          transform: translateY(-2px);
+        }
+      }
+    }
+
+    .recall-objective-btn {
+      margin-top: 1.25rem;
+      width: 100%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.6rem;
+      padding: 0.8rem 1rem;
+      background: linear-gradient(135deg, $bumer-primary 0%, color.adjust($bumer-primary, $lightness: -10%) 100%);
+      color: #FFFFFF;
+      border: none;
+      border-radius: 12px;
+      font-weight: 800;
+      font-size: 0.95rem;
+      cursor: pointer;
+      box-shadow: 0 4px 14px rgba(79, 70, 229, 0.35);
+      transition: $transition-smooth;
+      font-family: $font-main;
+
+      i {
+        font-size: 1.1rem;
+      }
+
+      &:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 6px 20px rgba(79, 70, 229, 0.5);
+        filter: brightness(1.05);
+      }
+
+      &:active {
+        transform: translateY(-1px) scale(0.98);
+      }
+    }
+  }
+
+  .instructions-card {
+    background: rgba(30, 41, 59, 0.4);
+    border: 1px dashed $bumer-border;
+    border-radius: 16px;
+    padding: 1.5rem;
+
+    h3 {
+      margin-top: 0;
+      font-size: 1rem;
+      font-weight: 600;
+      color: $bumer-text;
+      margin-bottom: 0.75rem;
+    }
+
+    ul {
+      margin: 0;
+      padding-left: 1.2rem;
+      color: $bumer-text-muted;
+      font-size: 0.85rem;
+      line-height: 1.6;
+
+      li {
+        margin-bottom: 0.5rem;
+        span {
+          color: $bumer-text;
+          font-weight: 500;
+        }
+      }
+    }
+  }
+}
+
+// Smartphone Bezel & Shell
+.simulator-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  width: 100%;
+}
+
+.smartphone-bezel {
+  width: 100%;
+  max-width: min(420px, 100vw);
+  height: 840px;
+  background-color: #000000;
+  border-radius: 48px;
+  padding: 14px;
+  position: relative;
+  border: 4px solid #1E293B;
+  box-shadow: 0 30px 60px -15px rgba(0,0,0,0.8),
+              0 0 0 1px rgba(255,255,255,0.1) inset,
+              0 10px 20px -10px rgba(255,255,255,0.05);
+  display: flex;
+  flex-direction: column;
+  transition: $transition-smooth;
+
+  @media (max-width: 520px) {
+    max-width: 100vw;
+    width: 100vw;
+    height: 100dvh;
+    border-radius: 0;
+    padding: 0;
+    border: none;
+    box-shadow: none;
+  }
+
+  // Camera Dynamic Island / Notch
+  .dynamic-island {
+    position: absolute;
+    top: 22px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 110px;
+    height: 30px;
+    background-color: #000000;
+    border-radius: 20px;
+    z-index: 100;
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    padding-right: 12px;
+    pointer-events: none;
+
+    &::after {
+      content: '';
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      background: radial-gradient(circle, #0F172A 30%, #000 70%);
+      box-shadow: 0 0 4px rgba(255,255,255,0.2);
+    }
+
+    @media (max-width: 450px) {
+      display: none;
+    }
+  }
+
+  // Physical Home Indicator Bar (like iOS)
+  .home-indicator {
+    position: absolute;
+    bottom: 8px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 140px;
+    height: 5px;
+    background-color: rgba(255,255,255,0.3);
+    border-radius: 10px;
+    z-index: 99;
+    pointer-events: none;
+
+    @media (max-width: 450px) {
+      bottom: 4px;
+    }
+  }
+}
+
+// Simulated Screen Interior
+.smartphone-screen {
+  flex: 1;
+  background-color: var(--theme-primary-bg, #F8FAFC);
+  color: var(--theme-text-main, #0F172A);
+  border-radius: 36px;
+  overflow: hidden;
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  font-family: $font-main;
+  box-shadow: inset 0 0 10px rgba(0,0,0,0.15);
+
+  @media (max-width: 450px) {
+    border-radius: 0;
+  }
+}
+
+// Simulated Status Bar
+.screen-status-bar {
+  height: 44px;
+  padding: 0 24px;
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--theme-text-main, #0F172A);
+  opacity: 0.8;
+  z-index: 95;
+  background-color: transparent;
+  pointer-events: none;
+
+  .status-left {
+    padding-bottom: 2px;
+  }
+
+  .status-right {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding-bottom: 2px;
+  }
+
+  @media (max-width: 450px) {
+    height: 36px;
+    padding: 0 16px;
+  }
+}
+
+// Simulated Screen Body
+.screen-scroll-container {
+  flex: 1;
+  overflow-y: auto;
+  padding: 0.85rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  padding-bottom: 70px; // extra spacing for nav bars and notch margins
+
+  // custom scrollbar
+  &::-webkit-scrollbar {
+    width: 3px;
+  }
+  &::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  &::-webkit-scrollbar-thumb {
+    background: rgba(0,0,0,0.1);
+    border-radius: 4px;
+  }
+}
+
+// OBJECTIVE SCREEN OVERLAY (shown between success and new interface)
+.objective-screen-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(135deg, #1a1563 0%, #0b513e 100%); // Rich blend between Bumer primary (indigo) and success (emerald)
+  z-index: 210;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: space-between;
+  padding: 2rem 1.5rem 2.25rem;
+  color: #FFFFFF;
+  text-align: center;
+  animation: fadeIn 0.35s cubic-bezier(0.16, 1, 0.3, 1) both;
+
+  // Middle section groups icon + label + content
+  .objective-content-group {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    flex: 1;
+    justify-content: center;
+    padding: 0.75rem 0;
+    width: 100%;
+  }
+
+  .objective-card {
+    background: rgba(11, 15, 25, 0.85); // High contrast dark slate background
+    border: 1px solid rgba(255, 255, 255, 0.15); // Subtle premium glass border
+    border-radius: 24px;
+    padding: 2rem 1.75rem;
+    width: 100%;
+    max-width: 320px;
+    box-shadow: 0 16px 40px rgba(0, 0, 0, 0.45);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    animation: popIn 0.4s cubic-bezier(0.16, 1, 0.3, 1) both;
+  }
+
+  .objective-icon {
+    width: 76px;
+    height: 76px;
+    background: rgba(16, 185, 129, 0.16);
+    border: 2px solid rgba(16, 185, 129, 0.5);
+    border-radius: 50%;
+    @include flex-center;
+    font-size: 2rem;
+    color: #10B981;
+    margin-bottom: 1.25rem;
+    box-shadow: 0 0 28px rgba(16, 185, 129, 0.3);
+    animation: popIn 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275) 0.1s both;
+  }
+
+  .objective-label {
+    text-transform: uppercase;
+    font-size: 1.35rem;
+    font-weight: 800;
+    letter-spacing: 1.5px;
+    color: #10B981;
+    margin-bottom: 1.25rem;
+  }
+
+  .objective-loading {
+    font-size: 1.8rem;
+    color: #818CF8;
+    margin: 0.75rem 0 2rem 0;
+    opacity: 0.8;
+  }
+
+  .objective-text {
+    font-size: 1.4rem;
+    font-weight: 700;
+    line-height: 1.5;
+    color: #FFFFFF;
+    margin: 0 0 1.5rem 0;
+    max-width: 300px;
+    text-align: center;
+    text-wrap: balance; // Balances line lengths beautifully
+
+    &.objective-text--hint {
+      opacity: 0.45;
+      font-weight: 400;
+      font-style: italic;
+    }
+  }
+
+  .objective-meta {
+    display: flex;
+    gap: 0.75rem;
+    margin-bottom: 0.5rem;
+    flex-wrap: wrap;
+    justify-content: center;
+
+    .objective-level-badge,
+    .objective-template {
+      font-size: 0.95rem;
+      font-weight: 700;
+      padding: 0.4rem 1rem;
+      border-radius: 20px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .objective-level-badge {
+      background: rgba(79, 70, 229, 0.25);
+      color: #A5B4FC;
+      border: 1px solid rgba(79, 70, 229, 0.45);
+    }
+
+    .objective-template {
+      background: rgba(16, 185, 129, 0.15);
+      color: #34D399;
+      border: 1px solid rgba(16, 185, 129, 0.35);
+    }
+  }
+
+  .objective-start-btn {
+    background: linear-gradient(135deg, #34D399 0%, #059669 100%);
+    color: #FFFFFF;
+    border: none;
+    border-radius: 16px;
+    font-size: 1.15rem;
+    font-weight: 800;
+    padding: 1rem 2rem;
+    cursor: pointer;
+    box-shadow: 0 8px 25px rgba(16, 185, 129, 0.4);
+    transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    display: flex;
+    align-items: center;
+    gap: 0.65rem;
+    width: 100%;
+    max-width: 280px;
+    justify-content: center;
+    font-family: $font-main;
+
+    &:hover:not(:disabled) {
+      filter: brightness(1.1);
+      transform: translateY(-2px);
+      box-shadow: 0 12px 30px rgba(16, 185, 129, 0.5);
+    }
+
+    &:active:not(:disabled) {
+      transform: scale(0.97);
+    }
+
+    &:disabled {
+      opacity: 0.4;
+      cursor: not-allowed;
+      box-shadow: none;
+    }
+  }
+
+  .objective-back-btn {
+    background: transparent;
+    color: rgba(148, 163, 184, 0.8);
+    border: 1px solid rgba(148, 163, 184, 0.25);
+    border-radius: 12px;
+    font-size: 0.95rem;
+    font-weight: 600;
+    padding: 0.7rem 1.5rem;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    width: 100%;
+    max-width: 280px;
+    justify-content: center;
+    font-family: $font-main;
+    margin-top: 0.75rem;
+
+    &:hover {
+      color: #FFFFFF;
+      border-color: rgba(148, 163, 184, 0.5);
+      background: rgba(255, 255, 255, 0.06);
+    }
+
+    &:active {
+      transform: scale(0.97);
+    }
+  }
+}
+
+.layout-LIST {
+  display: flex;
+  flex-direction: column;
+  gap: 0.65rem;
+}
+
+.layout-GRID {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 0.65rem;
+}
+
+.layout-DENSE {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+// INTERMEDIATE SUCCESS OVERLAY
+.success-screen-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(16, 185, 129, 0.75);
+  backdrop-filter: blur(3px);
+  z-index: 200;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: space-between;
+  padding: 3rem 1.5rem 4rem 1.5rem;
+  color: #FFFFFF;
+  text-align: center;
+  animation: fadeIn 0.4s cubic-bezier(0.16, 1, 0.3, 1) both;
+
+  .success-header-group {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    margin-bottom: 2rem;
+  }
+
+  .success-badge {
+    width: 64px;
+    height: 64px;
+    background-color: #FFFFFF;
+    color: #10B981;
+    border-radius: 50%;
+    @include flex-center;
+    font-size: 1.75rem;
+    margin-bottom: 1rem;
+    box-shadow: 0 8px 20px rgba(0,0,0,0.15);
+    animation: popIn 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275) 0.1s both;
+  }
+
+  h2 {
+    font-size: 1.75rem;
+    font-weight: 800;
+    margin: 0;
+    letter-spacing: -0.5px;
+  }
+
+  p {
+    font-size: 0.875rem;
+    opacity: 0.9;
+    margin: 0 0 1.75rem 0;
+    font-weight: 500;
+    line-height: 1.5;
+    max-width: 260px;
+  }
+
+  .next-level-btn {
+    background-color: #FFFFFF;
+    color: #10B981;
+    border: none;
+    border-radius: 12px;
+    font-size: 0.925rem;
+    font-weight: 800;
+    padding: 0.75rem 1.75rem;
+    cursor: pointer;
+    box-shadow: 0 8px 16px rgba(0,0,0,0.1);
+    transition: $transition-smooth;
+    width: 100%;
+    max-width: 240px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.6rem;
+
+    &:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 12px 24px rgba(0,0,0,0.15);
+      background-color: #F8FAFC;
+    }
+
+    &:active {
+      transform: translateY(-1px);
+    }
+  }
+}
+
+// Keyframes
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes popIn {
+  from {
+    opacity: 0;
+    transform: scale(0.6);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+// Floating helper widget to remember the active mission objective
+.floating-objective-btn {
+  position: absolute;
+  bottom: 80px;
+  right: 16px;
+  background: linear-gradient(135deg, #10B981 0%, #059669 100%);
+  color: #FFFFFF;
+  border: none;
+  border-radius: 50px;
+  padding: 0.65rem 1.1rem;
+  font-size: 0.85rem;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  box-shadow: 0 4px 14px rgba(16, 185, 129, 0.4), inset 0 1px 1px rgba(255,255,255,0.25);
+  cursor: pointer;
+  z-index: 90;
+  transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+  font-family: $font-main;
+
+  i {
+    font-size: 1rem;
+    animation: floatingPulse 2s infinite ease-in-out;
+  }
+
+  span {
+    white-space: nowrap;
+    letter-spacing: 0.5px;
+  }
+
+  &:hover {
+    transform: translateY(-2px) scale(1.03);
+    box-shadow: 0 6px 20px rgba(16, 185, 129, 0.55);
+    background: linear-gradient(135deg, #34D399 0%, #059669 100%);
+  }
+
+  &:active {
+    transform: translateY(-1px) scale(0.98);
+  }
+}
+
+@keyframes floatingPulse {
+  0%, 100% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.2);
+  }
+}
+
+// Mobile-Only Main Menu Styling (Dark + Gradients)
+.main-menu-screen {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  background: linear-gradient(145deg, #0f172a 0%, #1e1b4b 50%, #000000 100%);
+  color: #ffffff;
+  padding: 2rem 1.5rem;
+  overflow-y: auto;
+  overflow-x: hidden;
+  align-items: center;
+  position: relative;
+  
+  // Decorative glowing orbs
+  &::before {
+    content: '';
+    position: absolute;
+    top: -50px;
+    left: -50px;
+    width: 200px;
+    height: 200px;
+    background: radial-gradient(circle, rgba(129, 140, 248, 0.4) 0%, transparent 70%);
+    border-radius: 50%;
+    pointer-events: none;
+  }
+  
+  &::after {
+    content: '';
+    position: absolute;
+    bottom: 50px;
+    right: -50px;
+    width: 250px;
+    height: 250px;
+    background: radial-gradient(circle, rgba(52, 211, 153, 0.25) 0%, transparent 70%);
+    border-radius: 50%;
+    pointer-events: none;
+  }
+
+  .main-menu-header {
+    text-align: center;
+    margin-top: 3rem;
+    margin-bottom: 2.5rem;
+    z-index: 10;
+    
+    .logo-icon {
+      font-size: 3.5rem;
+      background: linear-gradient(135deg, #818CF8, #34D399);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      margin-bottom: 0.5rem;
+      filter: drop-shadow(0 4px 12px rgba(129, 140, 248, 0.3));
+    }
+    
+    h1 {
+      font-size: 3rem;
+      font-weight: 900;
+      letter-spacing: -1px;
+      margin: 0;
+      background: linear-gradient(90deg, #FFFFFF, #E2E8F0);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+    
+    p {
+      color: #94A3B8;
+      font-size: 1.2rem;
+      margin-top: 0.5rem;
+    }
+  }
+
+  .level-selection-container {
+    width: 100%;
+    max-width: 320px;
+    background: rgba(30, 41, 59, 0.6);
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 24px;
+    padding: 1.5rem;
+    z-index: 10;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+    
+    h3 {
+      margin-top: 0;
+      font-size: 1.1rem;
+      font-weight: 700;
+      margin-bottom: 1.25rem;
+      text-align: left;
+      width: 100%;
+      color: #E2E8F0;
+    }
+    
+    .level-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 0.75rem;
+      
+      .menu-level-btn {
+        background: rgba(15, 23, 42, 0.6);
+        border: 1px solid rgba(129, 140, 248, 0.3);
+        border-radius: 12px;
+        color: #94A3B8;
+        font-weight: 700;
+        padding: 1rem 0;
+        font-size: 1.1rem;
+        cursor: pointer;
+        transition: all 0.2s ease;
+        
+        &:hover {
+          background: rgba(129, 140, 248, 0.15);
+          color: #FFFFFF;
+          transform: translateY(-2px);
+        }
+        
+        &.active {
+          background: linear-gradient(135deg, #818CF8 0%, #34D399 100%);
+          color: #FFFFFF;
+          border-color: transparent;
+          box-shadow: 0 4px 15px rgba(129, 140, 248, 0.45);
+          transform: translateY(-2px);
+        }
+      }
+    }
+  }
+  
+  .play-btn-wrapper {
+    margin-top: auto;
+    margin-bottom: 2rem;
+    width: 100%;
+    max-width: 320px;
+    z-index: 10;
+    
+    .play-btn {
+      width: 100%;
+      background: linear-gradient(135deg, #34D399 0%, #059669 100%);
+      color: #FFFFFF;
+      border: none;
+      border-radius: 16px;
+      padding: 1.1rem;
+      font-size: 1.25rem;
+      font-weight: 800;
+      cursor: pointer;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      gap: 0.75rem;
+      box-shadow: 0 8px 25px rgba(16, 185, 129, 0.4);
+      transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+      
+      &:hover {
+        transform: translateY(-3px);
+        box-shadow: 0 12px 30px rgba(16, 185, 129, 0.5);
+        filter: brightness(1.1);
+      }
+      
+      &:active {
+        transform: scale(0.96);
+      }
+    }
+  }
+}

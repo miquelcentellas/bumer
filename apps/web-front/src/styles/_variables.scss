@@ -1,0 +1,18 @@
+// Brand / Platform colors (Bumer training control UI)
+$bumer-primary: #4F46E5;
+$bumer-secondary: #0F172A;
+$bumer-success: #10B981;
+$bumer-danger: #EF4444;
+$bumer-warning: #F59E0B;
+$bumer-bg: #0B0F19;
+$bumer-card: #1E293B;
+$bumer-border: #334155;
+$bumer-text: #F8FAFC;
+$bumer-text-muted: #94A3B8;
+
+// Fonts
+$font-main: 'Roboto', -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+
+// Transitions
+$transition-smooth: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+$transition-bounce: all 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
