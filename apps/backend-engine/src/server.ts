@@ -1,5 +1,7 @@
+import path from 'path';
 import fastify from 'fastify';
 import cors from '@fastify/cors';
+import fastifyStatic from '@fastify/static';
 import { 
   ProceduralScreen, 
   UIComponent, 
@@ -525,8 +527,19 @@ server.get('/api/screen/generate', async (request, reply) => {
   reply.send(response);
 });
 
-// Start the server
-const port = 3001;
+// Register static file serving for React frontend in production
+server.register(fastifyStatic, {
+  root: path.join(__dirname, '../../web-front/dist'),
+  wildcard: false,
+});
+
+// Serve index.html for any other non-API routes (SPA routing fallback)
+server.get('/*', async (request, reply) => {
+  return reply.sendFile('index.html');
+});
+
+// Start the server (bind to PORT assigned by cloud provider or fallback to 3001)
+const port = parseInt(process.env.PORT || '3001', 10);
 server.listen({ port, host: '0.0.0.0' }, (err, address) => {
   if (err) {
     server.log.error(err);

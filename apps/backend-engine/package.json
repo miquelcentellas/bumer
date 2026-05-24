@@ -7,13 +7,14 @@
     "build": "tsc"
   },
   "dependencies": {
-    "fastify": "^4.26.2",
+    "@bumer/shared-types": "workspace:*",
     "@fastify/cors": "^9.0.1",
-    "@bumer/shared-types": "workspace:*"
+    "@fastify/static": "^7.0.4",
+    "fastify": "^4.26.2"
   },
   "devDependencies": {
-    "typescript": "^5.3.3",
     "@types/node": "^20.11.24",
-    "ts-node-dev": "^2.0.0"
+    "ts-node-dev": "^2.0.0",
+    "typescript": "^5.3.3"
   }
 }
