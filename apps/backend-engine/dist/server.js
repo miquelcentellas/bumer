@@ -35,10 +35,10 @@ const PALETTES = {
             accentColor: '#EA580C',
         },
         {
-            primaryBg: '#F0FDF4',
+            primaryBg: '#0A5C36',
             surfaceBg: '#FFFFFF',
-            textMain: '#166534',
-            accentColor: '#16A34A',
+            textMain: '#FFFFFF',
+            accentColor: '#0A5C36',
         }
     ],
     ECOMMERCE: [
@@ -75,7 +75,8 @@ const genId = () => Math.random().toString(36).substring(2, 9);
 // Procedural screen generation route
 server.get('/api/screen/generate', async (request, reply) => {
     const query = request.query;
-    const level = Math.min(6, Math.max(1, parseInt(query.level || '1', 10)));
+    const requestedLevel = parseInt(query.level || '1', 10);
+    const level = Math.min(6, Math.max(1, requestedLevel));
     const versionIndex = query.versionIndex !== undefined ? parseInt(query.versionIndex, 10) : undefined;
     let appTemplate = 'PORTFOLIO';
     let layoutStructure = 'LIST';
@@ -217,15 +218,21 @@ server.get('/api/screen/generate', async (request, reply) => {
         appTemplate = 'DELIVERY';
         layoutStructure = 'GRID';
         const foodItems = [
-            { name: 'Pizza Pepperoni', icon: 'pizza-slice', price: '$12.99' },
-            { name: 'Hamburguesa con Queso', icon: 'hamburger', price: '$8.50' },
-            { name: 'Tacos al Pastor', icon: 'pepper-hot', price: '$6.00' },
-            { name: 'Sushi de Salmón', icon: 'fish', price: '$15.20' },
-            { name: 'Ensalada César', icon: 'leaf', price: '$7.40' },
-            { name: 'Helado de Vainilla', icon: 'ice-cream', price: '$4.50' }
+            { name: 'Pizza Pepperoni', icon: 'pizza-slice', price: '12.99€', category: 'Pizzas' },
+            { name: 'Hamburguesa con Queso', icon: 'hamburger', price: '8.50€', category: 'Hamburguesas' },
+            { name: 'Tacos al Pastor', icon: 'pepper-hot', price: '6.00€', category: 'Occidental' },
+            { name: 'Sushi de Salmón', icon: 'fish', price: '15.20€', category: 'Japonesa' },
+            { name: 'Ensalada César', icon: 'leaf', price: '7.40€', category: 'Occidental' },
+            { name: 'Helado de Vainilla', icon: 'ice-cream', price: '4.50€', category: 'Postres' },
+            { name: 'Refresco de Cola', icon: 'glass-water', price: '2.50€', category: 'Bebidas' },
+            { name: 'Agua Mineral', icon: 'bottle-water', price: '1.80€', category: 'Bebidas' },
+            { name: 'Pollo Frito Coreano', icon: 'fire-burner', price: '11.90€', category: 'Coreana' },
+            { name: 'Ramen de Cerdo', icon: 'bowl-food', price: '13.50€', category: 'Japonesa' },
+            { name: 'Arroz Tres Delicias', icon: 'bowl-rice', price: '8.90€', category: 'Oriental' },
+            { name: 'Tarta de Queso', icon: 'cookie', price: '5.50€', category: 'Postres' }
         ];
-        const targetIndex = versionIndex !== undefined ? versionIndex % foodItems.length : Math.floor(Math.random() * foodItems.length);
-        const palIndex = versionIndex !== undefined ? Math.floor(versionIndex / foodItems.length) % PALETTES.DELIVERY.length : Math.floor(Math.random() * PALETTES.DELIVERY.length);
+        const palIndex = versionIndex !== undefined ? versionIndex % PALETTES.DELIVERY.length : Math.floor(Math.random() * PALETTES.DELIVERY.length);
+        const targetIndex = Math.floor(Math.random() * foodItems.length);
         themeColors = PALETTES.DELIVERY[palIndex];
         const targetFood = foodItems[targetIndex];
         missionText = `Agrega "${targetFood.name}" al carrito de compras.`;
@@ -271,7 +278,8 @@ server.get('/api/screen/generate', async (request, reply) => {
                     price: food.price,
                     icon: food.icon,
                     isTarget: isTarget,
-                    placeholder: label // Store button text inside placeholder
+                    placeholder: label, // Store button text inside placeholder
+                    category: food.category
                 }
             });
         });
@@ -286,7 +294,7 @@ server.get('/api/screen/generate', async (request, reply) => {
         themeColors = (PALETTES[appTemplate] || PALETTES.PORTFOLIO)[palIndex];
         // 5-6: E-Commerce or Banking (DENSE, search, bottom nav, many distractors, hidden button target)
         if (appTemplate === 'BANKING') {
-            missionText = 'Realiza la transferencia segura de $150.00.';
+            missionText = 'Realiza la transferencia segura de 150.00€.';
             components.push({
                 id: genId(),
                 type: 'SEARCH_BAR',
@@ -302,14 +310,14 @@ server.get('/api/screen/generate', async (request, reply) => {
             components.push({
                 id: genId(),
                 type: 'TEXT_BLOCK',
-                label: 'Saldo disponible: $2,450.00 | Retiros sin tarjeta activos.',
+                label: 'Saldo disponible: 2,450.00€ | Retiros sin tarjeta activos.',
                 props: { hierarchy: 'medium' }
             });
             // Distractors - Promos & ads
             components.push({
                 id: genId(),
                 type: 'BUTTON',
-                label: '¡Crédito de $10,000 YA! Pulsa Aquí',
+                label: '¡Crédito de 10,000€ YA! Pulsa Aquí',
                 props: {
                     intent: 'success',
                     hierarchy: 'medium',
@@ -333,7 +341,7 @@ server.get('/api/screen/generate', async (request, reply) => {
                 type: 'FORM_INPUT',
                 label: 'Monto a Transferir',
                 props: {
-                    placeholder: '$150.00'
+                    placeholder: '150.00€'
                 }
             });
             components.push({
@@ -420,7 +428,7 @@ server.get('/api/screen/generate', async (request, reply) => {
                 label: 'Cafetera Eléctrica Express Premium',
                 props: {
                     hierarchy: 'high',
-                    price: '$49.99 (Antes $99.99)',
+                    price: '49.99€ (Antes 99.99€)',
                     icon: 'coffee',
                     isTarget: false
                 }
@@ -473,7 +481,7 @@ server.get('/api/screen/generate', async (request, reply) => {
     const response = {
         screenId: genId(),
         appTemplate,
-        complexityLevel: level,
+        complexityLevel: requestedLevel,
         layoutStructure,
         themeColors,
         missionText,

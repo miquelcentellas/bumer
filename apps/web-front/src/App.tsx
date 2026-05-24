@@ -12,7 +12,6 @@ export default function App() {
   const [menuOpen, setMenuOpen] = useState<boolean>(false);
   const [showObjective, setShowObjective] = useState<boolean>(false);
   const [pendingScreen, setPendingScreen] = useState<ProceduralScreen | null>(null);
-  const [nextLevel] = useState<number>(1);
   const [currentTime, setCurrentTime] = useState<string>('12:45');
 
   // Interactivity states for Level 1 expanded objectives
@@ -21,132 +20,88 @@ export default function App() {
   const [commentText, setCommentText] = useState<string>('');
   const [userComments, setUserComments] = useState<Record<string, string[]>>({});
 
+  // Interactivity states for Level 3 Delivery application
+  const [selectedDeliveryProduct, setSelectedDeliveryProduct] = useState<UIComponent | null>(null);
+  const [deliveryCart, setDeliveryCart] = useState<UIComponent[]>([]);
+  const [showDeliveryCart, setShowDeliveryCart] = useState<boolean>(false);
+  const [deliveryError, setDeliveryError] = useState<string | null>(null);
+  const [deliveryCustomizations, setDeliveryCustomizations] = useState<Record<string, boolean>>({});
+  const [deliverySearchQuery, setDeliverySearchQuery] = useState<string>('');
+  const [selectedDeliveryCategory, setSelectedDeliveryCategory] = useState<string>('');
 
 
-  // Helper to load or initialize a pool synchronously from localStorage to prevent async state race conditions
-  const getPoolInfo = (lv: number): { pool: number[]; lastPlayed: number } => {
-    let pools: Record<number, number[]> = { 1: [], 2: [], 3: [], 4: [], 5: [], 6: [] };
-    let lastPlayedMap: Record<number, number> = { 1: -1, 2: -1, 3: -1, 4: -1, 5: -1, 6: -1 };
 
+  // Decoupled clean interface count per level
+  const getInterfaceCountForLevel = (lv: number): number => {
+    if (lv === 1) return 3; // 3 layouts (ver: 1, 2, 3)
+    if (lv === 2) return 2; // 2 landing palettes
+    if (lv === 3 || lv === 4) return 2; // 2 delivery themes (Orange vs Green)
+    if (lv === 5 || lv === 6) return 4; // 4 banking/ecommerce variations
+    return 2; // default fallback for other levels
+  };
+
+  // Get the next interface index for a level, complying strictly with rotation rules
+  const getNextInterfaceIndex = (lv: number): number => {
+    const n = getInterfaceCountForLevel(lv);
+    
+    // Read last played index from localStorage
+    let lastPlayedMap: Record<number, number> = {};
     try {
-      const savedPools = localStorage.getItem('bumer_rotation_pools');
-      if (savedPools) pools = JSON.parse(savedPools);
-      const savedLast = localStorage.getItem('bumer_last_played');
+      const savedLast = localStorage.getItem('bumer_last_played_interface');
       if (savedLast) lastPlayedMap = JSON.parse(savedLast);
     } catch (e) {
       console.error(e);
     }
-
-    const maxVars = lv === 1 ? 9 : lv === 2 ? 2 : (lv === 3 || lv === 4) ? 12 : 4;
-    let pool = [...(pools[lv] || [])];
-    let lastPlayed = lastPlayedMap[lv] ?? -1;
-
-    if (pool.length === 0) {
-      const getMeta = (idx: number) => {
-        if (lv === 1) {
-          return { ver: idx % 3, obj: Math.floor(idx / 3) % 3 };
-        } else if (lv === 2) {
-          return { ver: idx % 2, obj: 0 };
-        } else if (lv === 3 || lv === 4) {
-          return { ver: Math.floor(idx / 6) % 2, obj: idx % 6 };
-        } else {
-          return { ver: idx % 2, obj: Math.floor(idx / 2) % 2 };
-        }
-      };
-
-      // Precalculated perfect circular sequences that alternate both version & objective transitions
-      let baseSequence: number[] = [];
-      if (lv === 1) {
-        baseSequence = [0, 4, 8, 1, 5, 6, 2, 3, 7];
-      } else if (lv === 2) {
-        baseSequence = [0, 1];
-      } else if (lv === 3 || lv === 4) {
-        baseSequence = [0, 7, 2, 9, 4, 11, 1, 6, 3, 8, 5, 10];
-      } else {
-        baseSequence = [0, 3, 1, 2];
-      }
-
-      const validRotations: number[][] = [];
-      const backupRotations: number[][] = [];
-
-      for (let shift = 0; shift < maxVars; shift++) {
-        const rotated = [...baseSequence.slice(shift), ...baseSequence.slice(0, shift)];
-        if (lastPlayed !== -1) {
-          const lp = getMeta(lastPlayed);
-          const first = getMeta(rotated[0]);
-          const verDiff = first.ver !== lp.ver;
-          const objDiff = lv === 2 || first.obj !== lp.obj;
-
-          if (verDiff && objDiff) {
-            validRotations.push(rotated);
-          } else if (objDiff) {
-            backupRotations.push(rotated);
-          }
-        } else {
-          validRotations.push(rotated);
-        }
-      }
-
-      // Pick a random valid shift to keep rotation fresh and guarantee O(1) performance
-      let selectedSequence: number[];
-      if (validRotations.length > 0) {
-        const randIdx = Math.floor(Math.random() * validRotations.length);
-        selectedSequence = validRotations[randIdx];
-      } else if (backupRotations.length > 0) {
-        const randIdx = Math.floor(Math.random() * backupRotations.length);
-        selectedSequence = backupRotations[randIdx];
-      } else {
-        selectedSequence = [...baseSequence];
-      }
-
-      pool = selectedSequence;
-
-      // Save replenished pool immediately
-      pools[lv] = pool;
-      try {
-        localStorage.setItem('bumer_rotation_pools', JSON.stringify(pools));
-      } catch (e) {
-        console.error(e);
-      }
+    
+    const lastPlayed = lastPlayedMap[lv] ?? -1;
+    
+    if (lastPlayed === -1) {
+      // First time playing: pick 0
+      return 0;
     }
-
-    return { pool, lastPlayed };
+    
+    if (n === 2) {
+      // If there are exactly 2 interfaces, they must strictly alternate: 0, 1, 0, 1...
+      return lastPlayed === 0 ? 1 : 0;
+    } else {
+      // If there are 3 or more interfaces, pick randomly but ALWAYS different from the last one
+      const available = [];
+      for (let i = 0; i < n; i++) {
+        if (i !== lastPlayed) {
+          available.push(i);
+        }
+      }
+      const randIdx = Math.floor(Math.random() * available.length);
+      return available[randIdx];
+    }
   };
 
-  // Peek at the next version index without shifting it from the pool (prevents discarding versions during preview switching)
+  // Peek at the next version index without committing it
   const peekVersionIndex = (lv: number): number => {
-    const { pool } = getPoolInfo(lv);
-    return pool[0];
+    return getNextInterfaceIndex(lv);
   };
 
-  // Commit the version index by shifting it from the pool and updating lastPlayedVersion
+  // Commit the version index by updating lastPlayed in localStorage
   const commitVersionIndex = (lv: number): number => {
-    const { pool } = getPoolInfo(lv);
-    const popped = pool.shift() as number;
-
-    let pools: Record<number, number[]> = { 1: [], 2: [], 3: [], 4: [], 5: [], 6: [] };
-    let lastPlayedMap: Record<number, number> = { 1: -1, 2: -1, 3: -1, 4: -1, 5: -1, 6: -1 };
-
+    const nextIdx = getNextInterfaceIndex(lv);
+    
+    let lastPlayedMap: Record<number, number> = {};
     try {
-      const savedPools = localStorage.getItem('bumer_rotation_pools');
-      if (savedPools) pools = JSON.parse(savedPools);
-      const savedLast = localStorage.getItem('bumer_last_played');
+      const savedLast = localStorage.getItem('bumer_last_played_interface');
       if (savedLast) lastPlayedMap = JSON.parse(savedLast);
     } catch (e) {
       console.error(e);
     }
-
-    pools[lv] = pool;
-    lastPlayedMap[lv] = popped;
-
+    
+    lastPlayedMap[lv] = nextIdx;
+    
     try {
-      localStorage.setItem('bumer_rotation_pools', JSON.stringify(pools));
-      localStorage.setItem('bumer_last_played', JSON.stringify(lastPlayedMap));
+      localStorage.setItem('bumer_last_played_interface', JSON.stringify(lastPlayedMap));
     } catch (e) {
       console.error(e);
     }
-
-    return popped;
+    
+    return nextIdx;
   };
 
   // Update simulated smartphone clock
@@ -172,6 +127,13 @@ export default function App() {
     setActiveCommentPostId(null);
     setCommentText('');
     setUserComments({});
+    setSelectedDeliveryProduct(null);
+    setDeliveryCart([]);
+    setShowDeliveryCart(false);
+    setDeliveryError(null);
+    setDeliveryCustomizations({});
+    setDeliverySearchQuery('');
+    setSelectedDeliveryCategory('');
     try {
       const vIdx = commitVersionIndex(selectedLevel);
       // Calling our Fastify server (proxied in Vite config)
@@ -288,8 +250,15 @@ export default function App() {
     setActiveCommentPostId(null);
     setCommentText('');
     setUserComments({});
-    // Auto-fetch with the current nextLevel so the objective text appears immediately
-    fetchForObjective(nextLevel);
+    setSelectedDeliveryProduct(null);
+    setDeliveryCart([]);
+    setShowDeliveryCart(false);
+    setDeliveryError(null);
+    setDeliveryCustomizations({});
+    setDeliverySearchQuery('');
+    setSelectedDeliveryCategory('');
+    // Auto-fetch with the current level so the objective text appears immediately
+    fetchForObjective(level);
   };
 
   // Handler called when user taps "¡Entendido, Empezar!"
@@ -299,18 +268,606 @@ export default function App() {
         // Commit the version since the user is now starting the level!
         commitVersionIndex(pendingScreen.complexityLevel);
 
-        setLevel(pendingScreen.complexityLevel);
         setScreen(pendingScreen);
         setMenuOpen(false);
         setActivePostMenuId(null);
         setActiveCommentPostId(null);
         setCommentText('');
         setUserComments({});
+        setSelectedDeliveryProduct(null);
+        setDeliveryCart([]);
+        setShowDeliveryCart(false);
+        setDeliveryError(null);
+        setDeliveryCustomizations({});
+        setDeliverySearchQuery('');
+        setSelectedDeliveryCategory('');
         setAppState('PLAYING');
       }
       setPendingScreen(null);
     }
     setShowObjective(false);
+  };
+
+  const renderDeliveryApp = () => {
+    if (!screen) return null;
+
+    // Detect if this is the Green theme or Orange theme
+    const isGreenTheme = screen.themeColors.accentColor === '#0A5C36';
+
+    // Parse numeric value from price string
+    const parsePrice = (priceStr: string) => {
+      const parsed = parseFloat((priceStr || '0€').replace(/[^0-9.]/g, ''));
+      return isNaN(parsed) ? 0 : parsed;
+    };
+
+    // Prices for optional customizations (Green theme)
+    const CUSTOMIZATION_PRICES = {
+      'Huevo frito': 2.90,
+      'Langostino rebozado (Ebi Furai)': 9.90,
+      'Huevo pocheado (Onsen Egg)': 8.90,
+    };
+
+    // Find the target component
+    const targetComp = screen.components.find(c => c.props?.isTarget);
+
+    // Helper to get matching icons and vendor subtitles for products
+    const getProductDetails = (name: string) => {
+      const lower = name.toLowerCase();
+      if (lower.includes('pizza')) return { icon: 'pizza-slice', vendor: 'Por Pizza Hut', rating: '4.8', color: '#FFF3E0', imgSrc: '/delivery/pizza_pepperoni.png' };
+      if (lower.includes('hamburguesa') || lower.includes('burger') || lower.includes('queso')) {
+        if (lower.includes('tarta')) return { icon: 'cookie', vendor: 'Por Cheesecake Factory', rating: '4.9', color: '#FFF3E0', imgSrc: '/delivery/tarta_queso.png' };
+        return { icon: 'hamburger', vendor: 'Por Burger King', rating: '4.7', color: '#E8F5E9', imgSrc: '/delivery/cheeseburger.png' };
+      }
+      if (lower.includes('taco')) return { icon: 'pepper-hot', vendor: 'Por Taco Bell', rating: '4.7', color: '#FCE4EC', imgSrc: '/delivery/tacos.png' };
+      if (lower.includes('sushi')) return { icon: 'fish', vendor: 'Por Panda Express', rating: '4.9', color: '#E0F2F1', imgSrc: '/delivery/sushi.png' };
+      if (lower.includes('ensalada') || lower.includes('salad') || lower.includes('césar')) return { icon: 'leaf', vendor: 'Por FreshSalad', rating: '4.6', color: '#E8F5E9', imgSrc: '/delivery/caesar_salad.png' };
+      if (lower.includes('helado') || lower.includes('ice') || lower.includes('vainilla')) return { icon: 'ice-cream', vendor: 'Por Gelato', rating: '4.8', color: '#F3E5F5', imgSrc: '/delivery/vanilla_icecream.png' };
+      if (lower.includes('cola') || lower.includes('refresco')) return { icon: 'glass-water', vendor: 'Por Coca-Cola', rating: '4.9', color: '#FFEBEE', imgSrc: '/delivery/cola.png' };
+      if (lower.includes('agua')) return { icon: 'bottle-water', vendor: 'Por Bezoya', rating: '4.8', color: '#E0F7FA', imgSrc: '/delivery/agua_mineral.png' };
+      if (lower.includes('coreano') || lower.includes('pollo')) return { icon: 'fire-burner', vendor: 'Por BBQ Chicken', rating: '4.9', color: '#FFF3E0', imgSrc: '/delivery/pollo_coreano.png' };
+      if (lower.includes('ramen')) return { icon: 'bowl-food', vendor: 'Por Ramen Shifu', rating: '4.8', color: '#FFF8E1', imgSrc: '/delivery/ramen.png' };
+      if (lower.includes('arroz')) return { icon: 'bowl-rice', vendor: 'Por Wok To Walk', rating: '4.7', color: '#E8F5E9', imgSrc: '/delivery/arroz_tres_delicias.png' };
+      if (lower.includes('tarta') || lower.includes('cookie')) return { icon: 'cookie', vendor: 'Por Cheesecake Factory', rating: '4.9', color: '#FFF3E0', imgSrc: '/delivery/tarta_queso.png' };
+      return { icon: 'utensils', vendor: 'Por FoodHouse', rating: '4.5', color: '#ECEFF1', imgSrc: '' };
+    };
+
+    // Calculate Subtotal factoring in selected customizations
+    const subtotal = deliveryCart.reduce((sum, item) => {
+      const itemPrice = (item as any).finalPrice !== undefined 
+        ? (item as any).finalPrice 
+        : parsePrice(item.props?.price || '0€');
+      return sum + itemPrice;
+    }, 0);
+    const deliveryFee = deliveryCart.length > 0 ? 2.00 : 0.00;
+    const totalAmount = subtotal + deliveryFee;
+
+    // ── 1. RENDER CART SCREEN ────────────────────────────────────────────────
+    if (showDeliveryCart) {
+      const handleCheckout = () => {
+        // Find if target food item is in the cart
+        const hasTarget = deliveryCart.some(item => item.props?.isTarget);
+        if (hasTarget) {
+          setSuccess(true);
+          setShowDeliveryCart(false);
+        } else {
+          const targetName = targetComp ? targetComp.label : 'el platillo indicado';
+          setDeliveryError(`El objetivo es agregar "${targetName}" al carrito antes de realizar el Checkout.`);
+          setTimeout(() => setDeliveryError(null), 4000);
+        }
+      };
+
+      const handleRemoveFromCart = (idx: number) => {
+        const newCart = [...deliveryCart];
+        newCart.splice(idx, 1);
+        setDeliveryCart(newCart);
+      };
+
+      return (
+        <div className={`delivery-screen cart-view ${isGreenTheme ? 'theme-dark-green' : ''}`}>
+          {/* Header */}
+          <div className="delivery-header">
+            <button className="header-back-circle" onClick={() => setShowDeliveryCart(false)}>
+              <i className="fas fa-chevron-left"></i>
+            </button>
+            <span className="header-title">Carrito</span>
+            <button className="header-menu-btn"><i className="fas fa-ellipsis-vertical"></i></button>
+          </div>
+
+          {/* Error Message Toast */}
+          {deliveryError && (
+            <div className="delivery-error-toast">
+              <i className="fas fa-circle-exclamation"></i>
+              <span>{deliveryError}</span>
+            </div>
+          )}
+
+          {/* Scrollable Items list */}
+          <div className="cart-items-container">
+            {deliveryCart.length === 0 ? (
+              <div className="cart-empty-state">
+                <div className="empty-cart-icon"><i className="fas fa-shopping-basket"></i></div>
+                <h3>Tu carrito está vacío</h3>
+                <p>Vuelve al menú principal y añade tu platillo favorito.</p>
+              </div>
+            ) : (
+              deliveryCart.map((item, idx) => {
+                const details = getProductDetails(item.label);
+                return (
+                  <div key={`${item.id}-${idx}`} className="cart-item-card">
+                    <div className="cart-item-img" style={details.imgSrc ? undefined : { backgroundColor: details.color }}>
+                      {details.imgSrc ? (
+                        <img src={details.imgSrc} alt={item.label} className="cart-item-image-tag" />
+                      ) : (
+                        <i className={`fas fa-${details.icon}`}></i>
+                      )}
+                    </div>
+                    <div className="cart-item-info">
+                      <div className="cart-item-name-row">
+                        <span className="cart-item-name">{item.label}</span>
+                        <span className="cart-item-rating">★ {details.rating}</span>
+                      </div>
+                      <span className="cart-item-vendor">{details.vendor}</span>
+
+                      {/* Render customizations badges if present */}
+                      {(item as any).selectedCustoms && (item as any).selectedCustoms.length > 0 && (
+                        <div className="cart-item-customs-badges" style={{ display: 'flex', flexWrap: 'wrap', gap: '4px', margin: '4px 0' }}>
+                          {(item as any).selectedCustoms.map((customName: string) => (
+                            <span key={customName} className="custom-badge" style={{ fontSize: '0.625rem', fontWeight: 700, backgroundColor: 'rgba(var(--theme-accent-rgb), 0.08)', color: 'var(--theme-accent)', padding: '1px 6px', borderRadius: '4px' }}>
+                              + {customName}
+                            </span>
+                          ))}
+                        </div>
+                      )}
+
+                      <div className="cart-item-price-row">
+                        <span className="cart-item-price">
+                          {(item as any).finalPrice !== undefined 
+                            ? `${(item as any).finalPrice.toFixed(2)}€` 
+                            : (item.props?.price || '0.00€')}
+                        </span>
+                        <div className="cart-item-stepper">
+                          <button className="stepper-minus" onClick={() => handleRemoveFromCart(idx)}><i className="fas fa-minus"></i></button>
+                          <span className="stepper-value">1</span>
+                          <button className="stepper-plus"><i className="fas fa-plus"></i></button>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                );
+              })
+            )}
+          </div>
+
+          {/* Voucher input */}
+          <div className="voucher-input-wrapper">
+            <div className="voucher-input-inner">
+              <i className="fas fa-ticket-simple voucher-icon"></i>
+              <input type="text" placeholder="Ingresar código de descuento" readOnly value="" />
+              <button className="voucher-go-btn"><i className="fas fa-chevron-right"></i></button>
+            </div>
+          </div>
+
+          {/* Price breakdown */}
+          <div className="price-summary-block">
+            <div className="summary-row">
+              <span className="summary-label">Subtotal:</span>
+              <span className="summary-val">{subtotal.toFixed(2)}€</span>
+            </div>
+            <div className="summary-row">
+              <span className="summary-label">Costo de Envío:</span>
+              <span className="summary-val">{deliveryFee.toFixed(2)}€</span>
+            </div>
+            <div className="summary-divider"></div>
+            <div className="summary-row total-row">
+              <span className="summary-label">Monto Total:</span>
+              <span className="summary-val">{totalAmount.toFixed(2)}€</span>
+            </div>
+          </div>
+
+          {/* Checkout Bar */}
+          <div className="checkout-bar-footer">
+            <div className="checkout-price-col">
+              <span className="checkout-price-label">Precio</span>
+              <span className="checkout-price-val">{totalAmount.toFixed(2)}€</span>
+            </div>
+            <button className="checkout-pill-btn" onClick={handleCheckout}>
+              Pagar
+            </button>
+          </div>
+        </div>
+      );
+    }
+
+    // ── 2. RENDER PRODUCT DETAIL SCREEN ──────────────────────────────────────
+    if (selectedDeliveryProduct) {
+      const details = getProductDetails(selectedDeliveryProduct.label);
+
+      // Total computed price for this item including active customizations
+      const itemCustomizationsPrice = Object.keys(deliveryCustomizations)
+        .filter(k => deliveryCustomizations[k])
+        .reduce((sum, k) => sum + (CUSTOMIZATION_PRICES[k as keyof typeof CUSTOMIZATION_PRICES] || 0), 0);
+      const computedItemPrice = parsePrice(selectedDeliveryProduct.props?.price || '0€') + itemCustomizationsPrice;
+
+      const handleAddToCart = () => {
+        // Build the item payload with chosen options
+        const itemWithCustoms = {
+          ...selectedDeliveryProduct,
+          cartId: `${selectedDeliveryProduct.id}-${Date.now()}`,
+          selectedCustoms: Object.keys(deliveryCustomizations).filter(k => deliveryCustomizations[k]),
+          finalPrice: computedItemPrice
+        };
+        setDeliveryCart([...deliveryCart, itemWithCustoms]);
+        setSelectedDeliveryProduct(null);
+        setDeliveryCustomizations({}); // clear customizations for next choice
+        setShowDeliveryCart(true); // Open the cart view immediately
+      };
+
+      return (
+        <div className={`delivery-screen detail-view ${isGreenTheme ? 'theme-dark-green' : ''}`}>
+          {/* Header */}
+          <div className="delivery-header">
+            <button className="header-back-circle" onClick={() => setSelectedDeliveryProduct(null)}>
+              <i className="fas fa-chevron-left"></i>
+            </button>
+            <span className="header-title">Detalle</span>
+            <button className="header-menu-btn"><i className="fas fa-ellipsis-vertical"></i></button>
+          </div>
+
+          {/* Hero Image Section */}
+          <div className="detail-hero-section">
+            {details.imgSrc ? (
+              <img src={details.imgSrc} alt={selectedDeliveryProduct.label} className="detail-hero-image-tag" />
+            ) : (
+              <div className="detail-hero-icon-container" style={{ background: `linear-gradient(135deg, ${details.color} 0%, var(--theme-accent, #EA580C) 100%)` }}>
+                <i className={`fas fa-${details.icon} detail-hero-icon`}></i>
+              </div>
+            )}
+          </div>
+
+          {/* Details Content Card */}
+          <div className="detail-content-card">
+            <div className="detail-title-row">
+              <h2 className="detail-title">{selectedDeliveryProduct.label}</h2>
+              <span className="detail-rating"><i className="fas fa-star"></i> {details.rating}</span>
+            </div>
+            <span className="detail-vendor">{details.vendor}</span>
+
+            {/* Chef Info Row */}
+            <div className="detail-chef-row">
+              <div className="chef-avatar">
+                <i className="fas fa-circle-user"></i>
+              </div>
+              <div className="chef-info">
+                <span className="chef-name">Mitchel Santnar</span>
+                <span className="chef-id">ID: 13256626</span>
+              </div>
+              <div className="chef-actions">
+                <button className="chef-circle-btn"><i className="fas fa-message"></i></button>
+                <button className="chef-circle-btn"><i className="fas fa-phone"></i></button>
+              </div>
+            </div>
+
+            {/* Description */}
+            <div className="detail-desc-block">
+              <h3>Descripción</h3>
+              <p>
+                Deliciosos ingredientes frescos de primera calidad. Preparado al momento siguiendo la receta auténtica de {details.vendor} para garantizar todo su sabor y aroma crujiente. Entregado en condiciones óptimas para su consumo inmediato.
+              </p>
+            </div>
+
+            {/* Customization Checklist for Green Theme */}
+            {isGreenTheme && (
+              <div className="detail-customization-section">
+                <h3>
+                  <span>Añadir extras</span>
+                  <span className="custom-required-tag">Opcional</span>
+                </h3>
+                <div className="customization-list">
+                  {Object.keys(CUSTOMIZATION_PRICES).map((optionName) => {
+                    const priceDiff = CUSTOMIZATION_PRICES[optionName as keyof typeof CUSTOMIZATION_PRICES];
+                    const isChecked = !!deliveryCustomizations[optionName];
+                    const toggleOption = () => {
+                      setDeliveryCustomizations(prev => ({
+                        ...prev,
+                        [optionName]: !prev[optionName]
+                      }));
+                    };
+                    return (
+                      <div 
+                        key={optionName} 
+                        className="customization-row" 
+                        onClick={toggleOption}
+                      >
+                        <div className="custom-label-group">
+                          <div className={`custom-checkbox-mock ${isChecked ? 'checked' : ''}`}>
+                            <i className="fas fa-check"></i>
+                          </div>
+                          <span className="custom-item-name">{optionName}</span>
+                        </div>
+                        <span className="custom-item-price">+{priceDiff.toFixed(2)}€</span>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+
+            {/* Delivery Info Badges */}
+            <div className="detail-info-badges">
+              <div className="detail-badge-pill">
+                <i className="fas fa-motorcycle"></i>
+                <div className="badge-pill-text">
+                  <span className="badge-pill-title">Tiempo de Entrega</span>
+                  <span className="badge-pill-desc">25 min</span>
+                </div>
+              </div>
+              <div className="detail-badge-pill">
+                <i className="fas fa-truck-fast"></i>
+                <div className="badge-pill-text">
+                  <span className="badge-pill-title">Tipo de Envío</span>
+                  <span className="badge-pill-desc">Exprés</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Price & Add to Cart Footer */}
+          <div className="checkout-bar-footer">
+            <div className="checkout-price-col">
+              <span className="checkout-price-label">Precio</span>
+              <span className="checkout-price-val">
+                {computedItemPrice.toFixed(2)}€
+              </span>
+            </div>
+            <button className="checkout-pill-btn" onClick={handleAddToCart}>
+              <i className="fas fa-cart-plus"></i>
+              <span>Añadir al Carrito</span>
+            </button>
+          </div>
+        </div>
+      );
+    }
+
+    // Map food names to standard category labels
+    const getCategoryForFood = (comp: UIComponent): string => {
+      if (comp.props?.category) return comp.props.category;
+      
+      const name = comp.label;
+      const lower = name.toLowerCase();
+      if (lower.includes('pizza')) return 'Pizzas';
+      if (lower.includes('hamburguesa') || lower.includes('burger') || lower.includes('queso')) {
+        if (lower.includes('tarta')) return 'Postres';
+        return 'Hamburguesas';
+      }
+      if (lower.includes('taco') || lower.includes('alitas') || lower.includes('ensalada') || lower.includes('salad') || lower.includes('césar')) return 'Occidental';
+      if (lower.includes('sushi') || lower.includes('salmón') || lower.includes('ramen') || lower.includes('gyoza') || lower.includes('japón')) return 'Japonesa';
+      if (lower.includes('corea') || lower.includes('kimchi') || lower.includes('bibimbap')) return 'Coreana';
+      if (lower.includes('fideos') || lower.includes('arroz') || lower.includes('bao') || lower.includes('oriental')) return 'Oriental';
+      if (lower.includes('helado') || lower.includes('tarta') || lower.includes('ice') || lower.includes('postre') || lower.includes('vainilla') || lower.includes('brownie')) return 'Postres';
+      if (lower.includes('refresco') || lower.includes('agua') || lower.includes('zumo') || lower.includes('cola') || lower.includes('bebida')) return 'Bebidas';
+      return 'Oriental'; // Default fallback
+    };
+
+    // ── 3. RENDER HOME SCREEN ────────────────────────────────────────────────
+    const productComponents = screen.components
+      .filter(c => c.type === 'CARD_PRODUCT')
+      .filter(comp => comp.label.toLowerCase().includes(deliverySearchQuery.toLowerCase()))
+      .filter(comp => {
+        if (!isGreenTheme || !selectedDeliveryCategory) return true;
+        return getCategoryForFood(comp) === selectedDeliveryCategory;
+      });
+
+    return (
+      <div className={`delivery-screen home-view ${isGreenTheme ? 'theme-dark-green' : ''}`}>
+        {/* Top Header */}
+        <div className="home-top-header" style={isGreenTheme ? { padding: '0 1.5rem' } : undefined}>
+          <div className="branding-title" style={isGreenTheme ? { display: 'flex', alignItems: 'center', justifyContent: 'center', width: '100%' } : { display: 'flex', alignItems: 'center' }}>
+            {isGreenTheme ? (
+              <>
+                <span style={{ fontSize: '4.2rem', fontWeight: 900, color: '#FFFFFF', lineHeight: 1.1 }}>Búmer</span>
+                <span style={{ fontSize: '4.2rem', fontWeight: 900, color: '#00E676', lineHeight: 1.1 }}>Food</span>
+              </>
+            ) : (
+              <>
+                <span style={{ fontSize: '1.45rem', fontWeight: 900, letterSpacing: '-0.5px', color: '#0F172A' }}>Comida</span>
+                <span style={{ fontSize: '1.45rem', fontWeight: 900, color: 'var(--theme-accent, #EA580C)' }}>Fast</span>
+                <span style={{ fontSize: '1.45rem', fontWeight: 900, color: 'var(--theme-accent, #EA580C)', marginLeft: '1px' }}>.</span>
+              </>
+            )}
+          </div>
+          {!isGreenTheme && (
+            <button className="cart-badge-btn" onClick={() => setShowDeliveryCart(true)}>
+              <i className="fas fa-shopping-basket"></i>
+              {deliveryCart.length > 0 && (
+                <span className="cart-badge-count">{deliveryCart.length}</span>
+              )}
+            </button>
+          )}
+        </div>
+
+        {/* Scrollable interior */}
+        <div className="home-scroll-body">
+          {/* Search bar & Filter (ComidaFast - Naranja) */}
+          {!isGreenTheme && (
+            <div className="search-filter-wrapper">
+              <div className="search-input-inner">
+                <i className="fas fa-search search-lens"></i>
+                <input 
+                  type="text" 
+                  placeholder="Buscar comida, almacén..." 
+                  value={deliverySearchQuery}
+                  onChange={(e) => setDeliverySearchQuery(e.target.value)}
+                />
+              </div>
+              <button className="filter-orange-btn">
+                <i className="fas fa-sliders"></i>
+              </button>
+            </div>
+          )}
+
+          {/* BúmerFood Premium Hero Banner */}
+          {isGreenTheme && (
+            <div className="bumerfood-hero-banner">
+              <div className="hero-text-col">
+                <span className="hero-tagline">Comidas Irresistiblemente Sabrosas</span>
+                <h2 className="hero-title">HECHO FRESCO • SERVIDO CALIENTE</h2>
+                <button className="hero-cta-btn">Pedir Ahora 🔥</button>
+              </div>
+              
+              <div className="hero-discount-ribbon">
+                <span className="ribbon-text-up">Hasta el</span>
+                <span className="ribbon-text-percent">40%</span>
+              </div>
+
+              <div className="hero-img-col">
+                <img src="/delivery/asian_wings_bowl.png" alt="Plato delicioso" className="hero-food-image" />
+              </div>
+            </div>
+          )}
+
+          {/* Categories Section (BúmerFood - Verde) */}
+          {isGreenTheme && (
+            <>
+              <div className="section-header">
+                <span className="section-title">Categorías</span>
+                <span className="section-see-all" onClick={() => setSelectedDeliveryCategory('')} style={{ cursor: 'pointer' }}>Ver Todo</span>
+              </div>
+
+              <div className="categories-circular-grid">
+                {[
+                  { name: 'Bebidas', icon: 'glass-water' },
+                  { name: 'Pizzas', icon: 'pizza-slice' },
+                  { name: 'Hamburguesas', icon: 'hamburger' },
+                  { name: 'Postres', icon: 'ice-cream' },
+                  { name: 'Occidental', icon: 'drumstick-bite' },
+                  { name: 'Oriental', icon: 'bowl-rice' },
+                  { name: 'Coreana', icon: 'fire-burner' },
+                  { name: 'Japonesa', icon: 'shrimp' },
+                ].map((cat) => {
+                  const isActive = selectedDeliveryCategory === cat.name;
+                  const toggleCategory = () => {
+                    if (isActive) {
+                      setSelectedDeliveryCategory('');
+                    } else {
+                      setSelectedDeliveryCategory(cat.name);
+                    }
+                  };
+                  return (
+                    <div key={cat.name} className="category-circle-item" onClick={toggleCategory} style={{ cursor: 'pointer' }}>
+                      <div className={`circle-wrapper ${isActive ? 'active' : ''}`}>
+                        <i className={`fas fa-${cat.icon}`}></i>
+                      </div>
+                      <span>{cat.name}</span>
+                    </div>
+                  );
+                })}
+              </div>
+
+              {/* Search bar & Filter (BúmerFood - Verde, sit below categories grid) */}
+              <div className="search-filter-wrapper" style={{ marginBottom: '1.2rem' }}>
+                <div className="search-input-inner">
+                  <i className="fas fa-search search-lens"></i>
+                  <input 
+                    type="text" 
+                    placeholder="Buscar comida, almacén..." 
+                    value={deliverySearchQuery}
+                    onChange={(e) => setDeliverySearchQuery(e.target.value)}
+                  />
+                </div>
+                <button className="filter-orange-btn">
+                  <i className="fas fa-sliders"></i>
+                </button>
+              </div>
+            </>
+          )}
+
+          {/* Picks For You List / Grid */}
+          <div className="section-header">
+            <span className="section-title">Recomendado para ti</span>
+            <span className="section-see-all">Ver Todo</span>
+          </div>
+
+          <div className="picks-for-you-grid">
+            {productComponents.length === 0 ? (
+              <div className="search-empty-state" style={{ textAlign: 'center', padding: '3rem 1rem', width: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.5rem' }}>
+                <div style={{ width: '56px', height: '56px', borderRadius: '50%', backgroundColor: isGreenTheme ? 'rgba(255,255,255,0.08)' : '#F1F5F9', display: 'flex', alignItems: 'center', justifyContent: 'center', color: isGreenTheme ? '#FFFFFF' : '#94A3B8', fontSize: '1.5rem', marginBottom: '0.5rem' }}>
+                  <i className="fas fa-magnifying-glass"></i>
+                </div>
+                <h4 style={{ margin: 0, fontSize: '0.95rem', fontWeight: 800, color: isGreenTheme ? '#FFFFFF' : '#0F172A' }}>Sin resultados</h4>
+                <p style={{ margin: 0, fontSize: '0.75rem', color: isGreenTheme ? 'rgba(255,255,255,0.6)' : '#94A3B8', maxWidth: '200px', lineHeight: 1.4 }}>No encontramos ningún platillo que coincida con "{deliverySearchQuery}"</p>
+              </div>
+            ) : (
+              productComponents.map(comp => {
+                const details = getProductDetails(comp.label);
+                return (
+                  <div key={comp.id} className="picks-card" onClick={() => setSelectedDeliveryProduct(comp)}>
+                    <div className="picks-card-img" style={details.imgSrc ? undefined : { backgroundColor: details.color }}>
+                      {details.imgSrc ? (
+                        <img src={details.imgSrc} alt={comp.label} className="picks-card-image-tag" />
+                      ) : (
+                        <i className={`fas fa-${details.icon} picks-card-icon`}></i>
+                      )}
+                      <span className="picks-rating-badge">★ {details.rating}</span>
+                      <button className="picks-heart-btn" onClick={(e) => e.stopPropagation()}><i className="fas fa-heart"></i></button>
+                    </div>
+                    <div className="picks-card-body">
+                      <span className="picks-card-title">{comp.label}</span>
+                      <span className="picks-card-vendor">25 min • Fácil • {details.vendor}</span>
+                      <div className="picks-card-footer">
+                        <span className="picks-card-price">{comp.props?.price || '0.00€'}</span>
+                        <button className="picks-add-btn" onClick={(e) => {
+                          e.stopPropagation();
+                          setSelectedDeliveryProduct(comp);
+                        }}>
+                          <i className="fas fa-plus"></i>
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                );
+              })
+            )}
+          </div>
+        </div>
+
+        {/* Bottom Nav Bar */}
+        <div className="delivery-bottom-nav">
+          <div className="nav-item active">
+            <i className="fas fa-house"></i>
+            <span>Inicio</span>
+          </div>
+          <div className="nav-item" onClick={() => setShowDeliveryCart(true)}>
+            <i className="fas fa-clipboard-list"></i>
+            <span>Pedidos</span>
+          </div>
+          <div className="nav-item">
+            <i className="fas fa-wallet"></i>
+            <span>Pagos</span>
+          </div>
+          <div className="nav-item">
+            <i className="fas fa-circle-user"></i>
+            <span>Perfil</span>
+          </div>
+        </div>
+
+        {/* Persistent Floating Assistive "Ver Objetivo" Button inside custom view */}
+        {!showObjective && !success && (
+          <button 
+            className="floating-objective-btn"
+            onClick={() => {
+              setPendingScreen(screen);
+              setShowObjective(true);
+            }}
+            title="Ver objetivo de la misión"
+            aria-label="Ver objetivo de la misión"
+            style={{ bottom: '80px', right: '16px' }}
+          >
+            <i className="fas fa-bullseye"></i>
+            <span>Ver Objetivo</span>
+          </button>
+        )}
+      </div>
+    );
   };
 
   // Extract navigation items so they render sticky at the bottom / top
@@ -333,6 +890,8 @@ export default function App() {
             '--theme-surface-bg': screen.themeColors.surfaceBg,
             '--theme-text-main': screen.themeColors.textMain,
             '--theme-accent': screen.themeColors.accentColor,
+            '--theme-accent-rgb': screen.themeColors.accentColor === '#0A5C36' ? '10, 92, 54' : '234, 88, 12',
+            '--theme-accent-hover': screen.themeColors.accentColor === '#0A5C36' ? '#08482A' : '#C2410C',
             '--theme-text-muted': screen.themeColors.primaryBg === '#0B0F19' 
               ? '#9CA3AF' 
               : screen.themeColors.primaryBg === '#EBE5F9' 
@@ -366,7 +925,7 @@ export default function App() {
           } as React.CSSProperties : {}}>
             
             {/* Status bar */}
-            <div className="screen-status-bar" style={appState === 'MAIN_MENU' ? { color: '#FFF' } : {}}>
+            <div className="screen-status-bar" style={(appState === 'MAIN_MENU' || (screen && screen.themeColors.primaryBg === '#0A5C36')) ? { color: '#FFF' } : {}}>
               <span className="status-left">{currentTime}</span>
               <div className="status-right">
                 <i className="fas fa-wifi"></i>
@@ -442,8 +1001,11 @@ export default function App() {
             )}
 
             {!loading && !error && screen && (
-              <>
-                {/* TOP NAV — Social Network fixed header */}
+              screen.appTemplate === 'DELIVERY' ? (
+                renderDeliveryApp()
+              ) : (
+                <>
+                  {/* TOP NAV — Social Network fixed header */}
                 {topNavComponents.map(nav => (
                   <div key={nav.id} className="social-top-nav">
                     <div className="social-nav-left">
@@ -779,6 +1341,7 @@ export default function App() {
                   </button>
                 )}
               </>
+              )
             )}
 
             {/* 4. SUCCESS OVERLAY SCREEN */}
@@ -806,6 +1369,13 @@ export default function App() {
 
                     {/* Objective content — centered */}
                     <div className="objective-content-group">
+                      {pendingScreen && !objectiveLoading && (
+                        <div className="objective-meta-header">
+                          <span className="objective-level-badge">Nivel {pendingScreen.complexityLevel}</span>
+                          <span className="objective-template">{pendingScreen.appTemplate}</span>
+                        </div>
+                      )}
+
                       <div className="objective-card">
                         <div className="objective-icon">
                           <i className="fas fa-bullseye"></i>
@@ -817,15 +1387,9 @@ export default function App() {
                             <i className="fas fa-spinner fa-spin"></i>
                           </div>
                         ) : pendingScreen ? (
-                          <>
-                            <p className="objective-text">
-                              {pendingScreen.missionText.replace(/\.$/, '')}
-                            </p>
-                            <div className="objective-meta">
-                              <span className="objective-level-badge">Nivel {pendingScreen.complexityLevel}</span>
-                              <span className="objective-template">{pendingScreen.appTemplate}</span>
-                            </div>
-                          </>
+                          <p className="objective-text">
+                            {pendingScreen.missionText.replace(/\.$/, '')}
+                          </p>
                         ) : (
                           <p className="objective-text objective-text--hint">Cargando objetivo...</p>
                         )}

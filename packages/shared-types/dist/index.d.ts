@@ -21,6 +21,7 @@ export interface UIComponent {
         imageSrc?: string;
         version?: number;
         userComments?: string[];
+        category?: string;
     };
 }
 export interface ProceduralScreen {

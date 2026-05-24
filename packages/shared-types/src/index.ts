@@ -33,6 +33,7 @@ export interface UIComponent {
     imageSrc?: string;                      // Path to real post image file
     version?: number;                       // Custom landing page version (1, 2, or 3)
     userComments?: string[];                // User-posted comments on this card
+    category?: string;                      // Category for delivery/food items
   };
 }
 
