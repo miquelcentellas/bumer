@@ -88,10 +88,11 @@ const genId = () => Math.random().toString(36).substring(2, 9);
 
 // Procedural screen generation route
 server.get('/api/screen/generate', async (request, reply) => {
-  const query = request.query as { level?: string; versionIndex?: string };
+  const query = request.query as { level?: string; versionIndex?: string; objectiveIndex?: string };
   const requestedLevel = parseInt(query.level || '1', 10);
   const level = Math.min(6, Math.max(1, requestedLevel));
   const versionIndex = query.versionIndex !== undefined ? parseInt(query.versionIndex, 10) : undefined;
+  const objectiveIndex = query.objectiveIndex !== undefined ? parseInt(query.objectiveIndex, 10) : undefined;
 
   let appTemplate: AppTemplate = 'PORTFOLIO';
   let layoutStructure: 'LIST' | 'GRID' | 'DENSE' = 'LIST';
@@ -107,11 +108,9 @@ server.get('/api/screen/generate', async (request, reply) => {
     appTemplate = 'Red Social';
     layoutStructure = 'LIST';
 
-    // Map 9 variations using versionIndex:
-    // - ver: (versionIndex % 3) + 1  -> 1, 2, or 3 (visual layout styles)
-    // - objType: Math.floor(versionIndex / 3) % 3 -> 0, 1, or 2 (objectives)
+    // Map variations using independent versionIndex and objectiveIndex
     const ver = versionIndex !== undefined ? (versionIndex % 3) + 1 : Math.floor(Math.random() * 3) + 1;
-    const objType = versionIndex !== undefined ? Math.floor(versionIndex / 3) % 3 : Math.floor(Math.random() * 3);
+    const objType = objectiveIndex !== undefined ? (objectiveIndex % 3) : Math.floor(Math.random() * 3);
 
     if (objType === 0) {
       missionText = 'Cierra la sesión.';
@@ -214,21 +213,30 @@ server.get('/api/screen/generate', async (request, reply) => {
     }
 
   } else if (level === 2) {
-    // ── NIVEL 2: Portfolio/Landing — Pulsa el botón Continuar ────────────────
+    // ── NIVEL 2: Portfolio/Landing — Pulsa el botón Continuar o Acceder ────────
     appTemplate = 'PORTFOLIO';
     layoutStructure = 'LIST';
     const palIndex = versionIndex !== undefined ? versionIndex % PALETTES.PORTFOLIO.length : Math.floor(Math.random() * PALETTES.PORTFOLIO.length);
     themeColors = PALETTES.PORTFOLIO[palIndex];
-    missionText = 'Continúa al siguiente paso.';
+    
+    const objType = objectiveIndex !== undefined ? objectiveIndex % 2 : Math.floor(Math.random() * 2);
+    let btnLabel = 'Continuar';
+    if (objType === 0) {
+      missionText = 'Continúa al siguiente paso.';
+      btnLabel = 'Continuar';
+    } else {
+      missionText = 'Accede a la siguiente sección.';
+      btnLabel = 'Acceder';
+    }
 
     components.push({ id: genId(), type: 'HEADER_MISSION', label: 'Bienvenido a Búmer', props: { hierarchy: 'high' } });
     components.push({ id: genId(), type: 'TEXT_BLOCK',
-      label: 'Búmer es una plataforma diseñada para ejercitar tu mente mediante desafíos cotidianos interactivos. Para completar este nivel, lee este texto y luego busca el botón azul de "Continuar".',
+      label: `Búmer es una plataforma diseñada para ejercitar tu mente mediante desafíos cotidianos interactivos. Para completar este nivel, lee este texto y luego busca el botón azul de "${btnLabel}".`,
       props: { hierarchy: 'medium' } });
     components.push({ id: genId(), type: 'TEXT_BLOCK',
       label: 'Consejo: Los botones de acción principal suelen estar en la parte inferior de la pantalla con colores de alto contraste.',
       props: { hierarchy: 'low' } });
-    components.push({ id: genId(), type: 'BUTTON', label: 'Continuar',
+    components.push({ id: genId(), type: 'BUTTON', label: btnLabel,
       props: { intent: 'primary', hierarchy: 'high', icon: 'circle-chevron-right', isTarget: true } });
 
   } else if (level >= 3 && level <= 4) {
@@ -252,7 +260,7 @@ server.get('/api/screen/generate', async (request, reply) => {
     ];
 
     const palIndex = versionIndex !== undefined ? versionIndex % PALETTES.DELIVERY.length : Math.floor(Math.random() * PALETTES.DELIVERY.length);
-    const targetIndex = Math.floor(Math.random() * foodItems.length);
+    const targetIndex = objectiveIndex !== undefined ? objectiveIndex % foodItems.length : Math.floor(Math.random() * foodItems.length);
     themeColors = PALETTES.DELIVERY[palIndex];
 
     const targetFood = foodItems[targetIndex];
@@ -309,217 +317,249 @@ server.get('/api/screen/generate', async (request, reply) => {
       });
     });
 
-  } else {
-    // ── NIVELES 5-6: Banca / E-Commerce — Camufla el botón real ─────────────
-    const variation = versionIndex !== undefined ? versionIndex % 4 : Math.floor(Math.random() * 4);
-    const isBanking = variation < 2;
-    const palIndex = variation % 2;
-
-    appTemplate = isBanking ? 'BANKING' : 'ECOMMERCE';
+  } else if (level === 5) {
+    // ── NIVEL 5: E-Commerce estrictamente ──────────────────────────────────
+    appTemplate = 'ECOMMERCE';
     layoutStructure = 'DENSE';
-    themeColors = (PALETTES[appTemplate] || PALETTES.PORTFOLIO)[palIndex];
-    // 5-6: E-Commerce or Banking (DENSE, search, bottom nav, many distractors, hidden button target)
-    if (appTemplate === 'BANKING') {
-      missionText = 'Realiza la transferencia segura de 150.00€.';
+    const palIndex = versionIndex !== undefined ? versionIndex % 2 : Math.floor(Math.random() * 2);
+    themeColors = PALETTES.ECOMMERCE[palIndex];
 
-      components.push({
-        id: genId(),
-        type: 'SEARCH_BAR',
-        label: 'Buscar transacciones, contactos...',
-        props: { placeholder: 'Ingresa término de búsqueda' }
-      });
+    const objIndex = objectiveIndex !== undefined ? objectiveIndex % 2 : Math.floor(Math.random() * 2);
 
-      components.push({
-        id: genId(),
-        type: 'HEADER_MISSION',
-        label: 'Banca Móvil - Cuenta Ahorros',
-        props: { hierarchy: 'high', icon: 'wallet' }
-      });
+    let productLabel = 'Cafetera Eléctrica Express Premium';
+    let productPrice = '49.99€ (Antes 99.99€)';
+    let productIcon = 'coffee';
 
-      components.push({
-        id: genId(),
-        type: 'TEXT_BLOCK',
-        label: 'Saldo disponible: 2,450.00€ | Retiros sin tarjeta activos.',
-        props: { hierarchy: 'medium' }
-      });
-
-      // Distractors - Promos & ads
-      components.push({
-        id: genId(),
-        type: 'BUTTON',
-        label: '¡Crédito de 10,000€ YA! Pulsa Aquí',
-        props: {
-          intent: 'success',
-          hierarchy: 'medium',
-          icon: 'gift',
-          isTarget: false
-        }
-      });
-
-      components.push({
-        id: genId(),
-        type: 'BUTTON',
-        label: '¡SORTEO! Gana un smartphone hoy mismo',
-        props: {
-          intent: 'danger',
-          hierarchy: 'low',
-          icon: 'trophy',
-          isTarget: false
-        }
-      });
-
-      components.push({
-        id: genId(),
-        type: 'FORM_INPUT',
-        label: 'Monto a Transferir',
-        props: {
-          placeholder: '150.00€'
-        }
-      });
-
-      components.push({
-        id: genId(),
-        type: 'FORM_INPUT',
-        label: 'CBU / Alias destino',
-        props: {
-          placeholder: 'juan.perez.banco'
-        }
-      });
-
-      // Distractor 2
-      components.push({
-        id: genId(),
-        type: 'BUTTON',
-        label: 'Cancelar Operación y Salir',
-        props: {
-          intent: 'danger',
-          hierarchy: 'medium',
-          isTarget: false
-        }
-      });
-
-      // Target Button (part of form)
-      components.push({
-        id: genId(),
-        type: 'BUTTON',
-        label: 'Confirmar Transferencia',
-        props: {
-          intent: 'primary',
-          hierarchy: 'high',
-          icon: 'shield-alt',
-          isTarget: true
-        }
-      });
-
-      // Navigation Bar Bottom
-      components.push({
-        id: genId(),
-        type: 'NAV_BAR_BOTTOM',
-        label: 'Inicio',
-        props: { icon: 'home', isTarget: false }
-      });
-      components.push({
-        id: genId(),
-        type: 'NAV_BAR_BOTTOM',
-        label: 'Tarjetas',
-        props: { icon: 'credit-card', isTarget: false }
-      });
-      components.push({
-        id: genId(),
-        type: 'NAV_BAR_BOTTOM',
-        label: 'Soporte',
-        props: { icon: 'question-circle', isTarget: false }
-      });
-
-    } else {
-      // ECOMMERCE
+    if (objIndex === 0) {
       missionText = 'Agrega la cafetera en oferta a tu carrito.';
-
-      components.push({
-        id: genId(),
-        type: 'SEARCH_BAR',
-        label: 'Buscar cafeteras, licuadoras...',
-        props: { placeholder: 'ej. Cafetera Italiana' }
-      });
-
-      components.push({
-        id: genId(),
-        type: 'HEADER_MISSION',
-        label: 'Super Tienda - Oferta Flash',
-        props: { hierarchy: 'high', icon: 'shopping-bag' }
-      });
-
-      // Aggressive ad banner
-      components.push({
-        id: genId(),
-        type: 'BUTTON',
-        label: '🔥 ¡DESCUENTO DE 90% EN TODO! HACE CLIC AQUÍ 🔥',
-        props: {
-          intent: 'danger',
-          hierarchy: 'high',
-          icon: 'fire',
-          isTarget: false
-        }
-      });
-
-      components.push({
-        id: genId(),
-        type: 'CARD_PRODUCT',
-        label: 'Cafetera Eléctrica Express Premium',
-        props: {
-          hierarchy: 'high',
-          price: '49.99€ (Antes 99.99€)',
-          icon: 'coffee',
-          isTarget: false
-        }
-      });
-
-      // Another distractor
-      components.push({
-        id: genId(),
-        type: 'BUTTON',
-        label: 'Suscribirse al boletín de ofertas',
-        props: {
-          intent: 'secondary',
-          hierarchy: 'low',
-          icon: 'envelope',
-          isTarget: false
-        }
-      });
-
-      // Target action
-      components.push({
-        id: genId(),
-        type: 'BUTTON',
-        label: 'Añadir al Carrito',
-        props: {
-          intent: 'success',
-          hierarchy: 'high',
-          icon: 'shopping-cart',
-          isTarget: true
-        }
-      });
-
-      // Bottom Nav
-      components.push({
-        id: genId(),
-        type: 'NAV_BAR_BOTTOM',
-        label: 'Tienda',
-        props: { icon: 'store', isTarget: false }
-      });
-      components.push({
-        id: genId(),
-        type: 'NAV_BAR_BOTTOM',
-        label: 'Ofertas',
-        props: { icon: 'percent', isTarget: false }
-      });
-      components.push({
-        id: genId(),
-        type: 'NAV_BAR_BOTTOM',
-        label: 'Mi Perfil',
-        props: { icon: 'user', isTarget: false }
-      });
+      productLabel = 'Cafetera Eléctrica Express Premium';
+      productPrice = '49.99€ (Antes 99.99€)';
+      productIcon = 'coffee';
+    } else {
+      missionText = 'Agrega la licuadora en oferta a tu carrito.';
+      productLabel = 'Licuadora Express Profesional';
+      productPrice = '34.99€ (Antes 69.99€)';
+      productIcon = 'plug'; // using generic electric/plug icon
     }
+
+    components.push({
+      id: genId(),
+      type: 'SEARCH_BAR',
+      label: 'Buscar cafeteras, licuadoras...',
+      props: { placeholder: 'ej. Cafetera Italiana' }
+    });
+
+    components.push({
+      id: genId(),
+      type: 'HEADER_MISSION',
+      label: 'Super Tienda - Oferta Flash',
+      props: { hierarchy: 'high', icon: 'shopping-bag' }
+    });
+
+    // Aggressive ad banner (distractor)
+    components.push({
+      id: genId(),
+      type: 'BUTTON',
+      label: '🔥 ¡DESCUENTO DE 90% EN TODO! HACE CLIC AQUÍ 🔥',
+      props: {
+        intent: 'danger',
+        hierarchy: 'high',
+        icon: 'fire',
+        isTarget: false
+      }
+    });
+
+    components.push({
+      id: genId(),
+      type: 'CARD_PRODUCT',
+      label: productLabel,
+      props: {
+        hierarchy: 'high',
+        price: productPrice,
+        icon: productIcon,
+        isTarget: false
+      }
+    });
+
+    // Another distractor
+    components.push({
+      id: genId(),
+      type: 'BUTTON',
+      label: 'Suscribirse al boletín de ofertas',
+      props: {
+        intent: 'secondary',
+        hierarchy: 'low',
+        icon: 'envelope',
+        isTarget: false
+      }
+    });
+
+    // Target action button
+    components.push({
+      id: genId(),
+      type: 'BUTTON',
+      label: 'Añadir al Carrito',
+      props: {
+        intent: 'success',
+        hierarchy: 'high',
+        icon: 'shopping-cart',
+        isTarget: true
+      }
+    });
+
+    // Bottom Nav
+    components.push({
+      id: genId(),
+      type: 'NAV_BAR_BOTTOM',
+      label: 'Tienda',
+      props: { icon: 'store', isTarget: false }
+    });
+    components.push({
+      id: genId(),
+      type: 'NAV_BAR_BOTTOM',
+      label: 'Ofertas',
+      props: { icon: 'percent', isTarget: false }
+    });
+    components.push({
+      id: genId(),
+      type: 'NAV_BAR_BOTTOM',
+      label: 'Mi Perfil',
+      props: { icon: 'user', isTarget: false }
+    });
+
+  } else {
+    // ── NIVEL 6: Banca estrictamente ──────────────────────────────────────
+    appTemplate = 'BANKING';
+    layoutStructure = 'DENSE';
+    const palIndex = versionIndex !== undefined ? versionIndex % 2 : Math.floor(Math.random() * 2);
+    themeColors = PALETTES.BANKING[palIndex];
+
+    const objIndex = objectiveIndex !== undefined ? objectiveIndex % 4 : Math.floor(Math.random() * 4);
+
+    let targetAmount = '150.00';
+    if (objIndex === 0) {
+      missionText = 'Realiza la transferencia segura de 150.00€.';
+      targetAmount = '150.00';
+    } else if (objIndex === 1) {
+      missionText = 'Realiza la transferencia segura de 300.00€.';
+      targetAmount = '300.00';
+    } else if (objIndex === 2) {
+      missionText = 'Bloquea temporalmente tu tarjeta de crédito.';
+      targetAmount = '0.00'; // Not used for this objective
+    } else {
+      missionText = 'Realiza un Bizum seguro de 50.00€.';
+      targetAmount = '50.00'; // Used as reference in Bizum form validation
+    }
+
+    components.push({
+      id: genId(),
+      type: 'SEARCH_BAR',
+      label: 'Buscar transacciones, contactos...',
+      props: { placeholder: 'Ingresa término de búsqueda' }
+    });
+
+    components.push({
+      id: genId(),
+      type: 'HEADER_MISSION',
+      label: 'Banca Móvil - Cuenta Ahorros',
+      props: { hierarchy: 'high', icon: 'wallet' }
+    });
+
+    components.push({
+      id: genId(),
+      type: 'TEXT_BLOCK',
+      label: 'Saldo disponible: 2,450.00€ | Retiros sin tarjeta activos.',
+      props: { hierarchy: 'medium' }
+    });
+
+    // Distractors - Promos & ads
+    components.push({
+      id: genId(),
+      type: 'BUTTON',
+      label: '¡Crédito de 10,000€ YA! Pulsa Aquí',
+      props: {
+        intent: 'success',
+        hierarchy: 'medium',
+        icon: 'gift',
+        isTarget: false
+      }
+    });
+
+    components.push({
+      id: genId(),
+      type: 'BUTTON',
+      label: '¡SORTEO! Gana un smartphone hoy mismo',
+      props: {
+        intent: 'danger',
+        hierarchy: 'low',
+        icon: 'trophy',
+        isTarget: false
+      }
+    });
+
+    components.push({
+      id: genId(),
+      type: 'FORM_INPUT',
+      label: 'Monto a Transferir',
+      props: {
+        placeholder: `${targetAmount}€`
+      }
+    });
+
+    components.push({
+      id: genId(),
+      type: 'FORM_INPUT',
+      label: 'CBU / Alias destino',
+      props: {
+        placeholder: 'juan.perez.banco'
+      }
+    });
+
+    // Distractor 2
+    components.push({
+      id: genId(),
+      type: 'BUTTON',
+      label: 'Cancelar Operación y Salir',
+      props: {
+        intent: 'danger',
+        hierarchy: 'medium',
+        isTarget: false
+      }
+    });
+
+    // Target Button (part of form) - We store the targetAmount in the placeholder property so that the custom React view can read it dynamically!
+    components.push({
+      id: genId(),
+      type: 'BUTTON',
+      label: 'Confirmar Transferencia',
+      props: {
+        intent: 'primary',
+        hierarchy: 'high',
+        icon: 'shield-alt',
+        isTarget: true,
+        placeholder: targetAmount
+      }
+    });
+
+    // Navigation Bar Bottom
+    components.push({
+      id: genId(),
+      type: 'NAV_BAR_BOTTOM',
+      label: 'Inicio',
+      props: { icon: 'home', isTarget: false }
+    });
+    components.push({
+      id: genId(),
+      type: 'NAV_BAR_BOTTOM',
+      label: 'Tarjetas',
+      props: { icon: 'credit-card', isTarget: false }
+    });
+    components.push({
+      id: genId(),
+      type: 'NAV_BAR_BOTTOM',
+      label: 'Soporte',
+      props: { icon: 'question-circle', isTarget: false }
+    });
   }
 
   const response: ProceduralScreen = {

@@ -1002,136 +1002,52 @@
       }
     }
 
-    // BúmerFood Premium Hero Banner
-    .bumerfood-hero-banner {
-      background: linear-gradient(135deg, #FFD54F 0%, #FBC02D 100%) !important; // Sleek yellow-gold gradient
-      width: calc(100% + 2rem) !important; // Bleed to full width of app
-      margin-left: -1rem !important;
+    // Premium Responsive Hero Banner (div.hero-baner / div.hero-banner) - Text Only Typographic Billboard
+    .hero-baner, .hero-banner {
+      background: linear-gradient(135deg, #FDE047 0%, #F97316 100%) !important; // Premium vibrant yellow & orange gradient
+      color: #0A1C12 !important;
+      border-radius: 0 !important; // Completely removed rounded borders as requested!
+      width: calc(100% + 2rem) !important; // Full bleed to simulated viewport edges
+      margin-left: -1rem !important; // Negative margin to align with screen edge
       margin-right: -1rem !important;
-      border-radius: 0 !important; // Removed rounded edges completely as requested!
-      padding: 3.5rem 1.5rem !important; // Comfortably balanced padding for peak legibility
+      margin-top: 0 !important;
+       // Clean separation spacing below
+      padding: 3rem 2rem !important; // Balanced padding for excellent mobile typography breathing room
       display: flex !important;
-      flex-direction: column !important; // Stack elements vertically for massive height
-      align-items: center !important; // Perfectly center all elements for clean balance
-      justify-content: flex-start !important;
+      align-items: center !important; // Center vertically inside the massive 800px container
+      justify-content: center !important; // Center horizontally
+      text-align: center !important;
       position: relative !important;
       overflow: hidden !important;
-      box-shadow: 0 10px 28px rgba(251, 192, 45, 0.25) !important;
-      color: #0A1C12 !important; // Dark green text for wonderful contrast!
-      height: 1200px !important; // Colossal height (1200px) preserved for ultimate tridimensional impact!
-      margin-bottom: 0.5rem !important;
+      box-shadow: 0 10px 28px rgba(249, 115, 22, 0.25) !important;
+      height: 800px !important; // Height of exactly 800px as requested!
 
-      .hero-text-col {
-        display: flex !important;
-        flex-direction: column !important;
-        align-items: center !important; // Center align text block
-        text-align: center !important;
-        gap: 1.0rem !important;
-        max-width: 100% !important;
-        width: 100% !important;
-        z-index: 10 !important;
-
-        .hero-tagline {
-          font-size: 1.5rem !important; // Elegant and legible size
-          font-weight: 700 !important;
-          color: rgba(10, 28, 18, 0.85) !important;
-          line-height: 1.3 !important;
-          text-transform: uppercase !important;
-          letter-spacing: 0.5px !important;
-        }
-
-        .hero-title {
-          margin: 0 !important;
-          font-size: 2.1rem !important; // Crisp, highly legible title sizing that fits mobile
-          font-weight: 900 !important;
-          color: #0A1C12 !important;
-          line-height: 1.25 !important;
-          letter-spacing: -0.2px !important;
-          text-transform: uppercase !important;
-        }
-
-        .hero-cta-btn {
-          margin-top: 1.8rem !important;
-          background-color: #0A5C36 !important; // Solid Corporate Green for ultimate brand presence!
-          color: #FFFFFF !important; // High contrast white text
-          border: none !important;
-          border-radius: 30px !important; // Elegant rounded pill
-          padding: 0.9rem 2.5rem !important; // Clean, standard button padding
-          font-size: 1.2rem !important; // Sleek button text size
-          font-weight: 800 !important;
-          cursor: pointer !important;
-          box-shadow: 0 6px 18px rgba(10, 92, 54, 0.25) !important;
-          transition: all 0.2s ease-in-out !important;
-
-          &:hover {
-            transform: translateY(-2px) !important;
-            box-shadow: 0 8px 22px rgba(10, 92, 54, 0.35) !important;
-          }
-          &:active {
-            transform: scale(0.96) !important;
-          }
-        }
-      }
-
-      // Elegant dark green circular discount badge (floating below button)
-      .hero-discount-ribbon {
-        position: absolute !important;
-        left: 50% !important;
-        top: 35% !important; // Centered vertically below CTA button
-        transform: translate(-50%, -50%) rotate(-8deg) !important;
-        background-color: #0A5C36 !important; // Solid deep green brand color!
-        border: 3px solid #FFFFFF !important; // Thick high contrast white border
-        width: 105px !important;
-        height: 105px !important;
-        border-radius: 50% !important; // Perfect glowing circular badge!
+      .hero-text-side {
         display: flex !important;
         flex-direction: column !important;
         align-items: center !important;
         justify-content: center !important;
-        box-shadow: 0 8px 20px rgba(0, 0, 0, 0.2) !important;
-        z-index: 12 !important;
-
-        .ribbon-text-up {
-          font-size: 0.72rem !important;
-          font-weight: 800 !important;
-          color: #FFFFFF !important;
-          text-transform: uppercase !important;
-          letter-spacing: 0.5px !important;
-          margin-bottom: 1px !important;
-        }
-
-        .ribbon-text-percent {
-          font-size: 1.9rem !important;
-          font-weight: 900 !important;
-          color: #00E676 !important; // Neon green pop color!
-          line-height: 1 !important;
-        }
-      }
-
-      .hero-img-col {
-        position: absolute !important;
-        left: 50% !important;
-        right: auto !important;
-        transform: translateX(-50%) !important;
-        bottom: 25px !important; // High breathability bottom alignment
-        top: auto !important;
+        max-width: 100% !important;
         width: 100% !important;
-        z-index: 5 !important;
-        display: flex !important;
-        align-items: flex-end !important;
-        justify-content: center !important;
+        z-index: 10 !important;
 
-        .hero-food-image {
-          width: auto !important;
-          height: 520px !important; // Scaled down to 520px to leave plenty of elegant whitespace!
-          max-height: 520px !important;
-          object-fit: contain !important;
-          filter: drop-shadow(0 25px 50px rgba(0, 0, 0, 0.3)) !important;
+        .hero-headline {
+          font-size: 1.75rem !important; // Optimized for mobile screen width: extremely bold and readable, with 0% risk of clipping
+          font-weight: 900 !important;
+          font-family: 'Bree Serif', serif !important;
+          line-height: 1.4 !important;
+          color: #0A1C12 !important;
+          margin: 0 !important;
+          text-transform: uppercase !important;
+          letter-spacing: -0.2px !important;
+          text-shadow: 0 2px 8px rgba(0, 0, 0, 0.04) !important;
+          white-space: normal !important; // Ensure text wraps naturally
+          word-wrap: break-word !important; // Break words only if strictly necessary
+          overflow-wrap: break-word !important;
+          width: 100% !important;
         }
       }
-    }
-
-    // Section Titles
+    }    // Section Titles
     .section-header {
       .section-title {
         color: #FFFFFF !important;
@@ -1196,49 +1112,64 @@
     .picks-card {
       background-color: #FFFFFF !important;
       border: none !important;
-      box-shadow: 0 6px 18px rgba(0,0,0,0.1) !important;
+      box-shadow: 0 6px 20px rgba(0,0,0,0.06) !important;
       display: flex !important;
       flex-direction: row !important; // Horizontal!
       align-items: stretch !important;
-      height: 110px !important;
+      height: 140px !important; // Fixed height to perfectly accommodate large senior-friendly texts
+      flex-shrink: 0 !important; // Force cards to NEVER shrink or collapse vertically when scrolling or listing items
+      flex-grow: 0 !important; // Force cards to NEVER expand or change height based on the number of siblings or search filters
+      border-radius: 18px !important;
+      overflow: hidden !important;
 
       &:hover {
-        transform: translateX(3px) !important; // Horizontal push
-        box-shadow: 0 8px 20px rgba(0,0,0,0.06) !important;
+        transform: translateX(4px) !important; // Elegantly slides right on hover
+        box-shadow: 0 10px 24px rgba(0,0,0,0.09) !important;
       }
 
       .picks-card-img {
-        width: 150px !important; // 50% wider photo
+        width: 140px !important; // Perfectly proportioned 1:1 square photo aspect ratio
         height: 100% !important;
         flex-shrink: 0 !important;
+        position: relative !important;
 
         .picks-rating-badge {
           position: absolute !important;
-          bottom: 6px !important; // bottom-left
+          bottom: 8px !important; // bottom-left of picture
           top: auto !important;
-          left: 6px !important;
+          left: 8px !important;
           right: auto !important;
-          background-color: #FAD03E !important; // Vibrant warm yellow background!
+          background-color: #FAD03E !important; // Vibrant warm yellow background
           color: #0F172A !important;
-          font-size: 0.75rem !important; // Increased font size for legibility
+          font-size: 0.78rem !important; // Highly readable size for all demographics
           font-weight: 800 !important;
-          padding: 0.15rem 0.35rem !important;
-          border-radius: 6px !important;
+          padding: 0.2rem 0.5rem !important;
+          border-radius: 8px !important;
+          box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15) !important;
         }
 
         .picks-heart-btn {
           position: absolute !important;
-          top: 6px !important; // top-left
-          left: 6px !important;
+          top: 8px !important; // top-left
+          left: 8px !important;
           right: auto !important;
-          width: 22px !important;
-          height: 22px !important;
-          font-size: 0.65rem !important;
+          width: 26px !important;
+          height: 26px !important;
+          font-size: 0.75rem !important;
+          border-radius: 50% !important;
+          background-color: rgba(255, 255, 255, 0.9) !important;
+          box-shadow: 0 2px 6px rgba(0,0,0,0.1) !important;
+          border: none !important;
+          color: #FF3B30 !important;
+          display: flex !important;
+          align-items: center !important;
+          justify-content: center !important;
+          cursor: pointer !important;
         }
       }
 
       .picks-card-body {
-        padding: 0.65rem 0.85rem !important;
+        padding: 0.85rem 1rem !important; // Spacious vertical breathing room
         display: flex !important;
         flex-direction: column !important;
         justify-content: space-between !important;
@@ -1246,41 +1177,65 @@
         min-width: 0 !important;
 
         .picks-card-title {
-          font-size: 0.98rem !important; // Increased font size for legibility
-          font-weight: 800 !important;
+          font-size: 1.12rem !important; // Expanded legible typography using Bree Serif
+          font-weight: 900 !important;
           color: #0A1C12 !important;
-          line-height: 1.25 !important;
+          line-height: 1.3 !important;
           white-space: nowrap !important;
           overflow: hidden !important;
           text-overflow: ellipsis !important;
+          margin: 0 !important;
         }
 
         .picks-card-vendor {
           color: #64748B !important;
-          font-size: 0.8rem !important; // Increased font size for legibility
+          font-size: 0.82rem !important; // Extremely legible vendor tagline
           white-space: nowrap !important;
           overflow: hidden !important;
           text-overflow: ellipsis !important;
-          margin-top: -2px !important;
+          margin-top: 1px !important;
+          margin-bottom: auto !important; // Push footer components cleanly to the bottom
         }
 
         .picks-card-footer {
           display: flex !important;
           align-items: center !important;
           justify-content: space-between !important;
-          margin-top: auto !important;
+          margin-top: 0.3rem !important;
+          padding-top: 0.2rem !important;
 
           .picks-card-price {
-            font-size: 2.1rem !important; // Doubled font size for ultimate visibility!
-            color: var(--theme-primary-bg) !important; // deep green
+            font-size: 1.85rem !important; // Massive, highly readable prices in Bree Serif (over 2x original size!)
+            font-weight: 900 !important;
+            color: #0A5C36 !important; // Deep corporate green for outstanding readability contrast on white
+            line-height: 1 !important;
+            margin: 0 !important;
           }
 
           .picks-add-btn {
-            width: 28px !important;
-            height: 28px !important;
-            background-color: var(--theme-primary-bg) !important;
-            box-shadow: 0 3px 8px rgba(10, 92, 54, 0.2) !important;
-            font-size: 0.9rem !important; // Increased font size for legibility
+            width: 32px !important; // Large tap target to guarantee ease of click
+            height: 32px !important;
+            border-radius: 50% !important;
+            border: none !important;
+            background-color: #00E676 !important; // Neon green of logo
+            color: #063520 !important; // Solid contrast dark green text inside
+            box-shadow: 0 4px 10px rgba(0, 230, 118, 0.35) !important; // Radiant glow
+            font-size: 1rem !important; // Perfectly readable "+" glyph
+            font-weight: 900 !important;
+            display: flex !important;
+            align-items: center !important;
+            justify-content: center !important;
+            cursor: pointer !important;
+            transition: all 0.2s ease !important;
+
+            &:hover {
+              transform: scale(1.1) !important;
+              box-shadow: 0 6px 14px rgba(0, 230, 118, 0.5) !important;
+            }
+
+            &:active {
+              transform: scale(0.9) !important;
+            }
           }
         }
       }
@@ -2939,5 +2894,514 @@
     &:active {
       transform: scale(0.96);
     }
+  }
+}
+
+// ── PREMIUM HIGH INTERACTIVE BANKING SIMULATOR OVERRIDES ──────────────────────
+.theme-banking {
+  display: flex !important;
+  flex-direction: column !important;
+  height: 100% !important;
+  width: 100% !important;
+  font-family: 'Bree Serif', serif !important;
+  background-color: var(--theme-primary-bg) !important;
+
+  &.theme-santanboom {
+    font-family: 'Google Sans Flex', 'Roboto', sans-serif !important;
+
+    *:not(.fa):not(.fas):not(.far):not(.fab):not([class*='fa-']) {
+      font-family: 'Google Sans Flex', 'Roboto', sans-serif !important;
+    }
+  }
+
+  &.theme-bumer-bank {
+    font-family: 'Space Grotesk', 'Roboto', sans-serif !important;
+
+    *:not(.fa):not(.fas):not(.far):not(.fab):not([class*='fa-']) {
+      font-family: 'Space Grotesk', 'Roboto', sans-serif !important;
+    }
+  }
+
+  // Custom keyframes
+  @keyframes scaleUp {
+    from {
+      transform: scale(0.95);
+      opacity: 0;
+    }
+    to {
+      transform: scale(1);
+      opacity: 1;
+    }
+  }
+
+  // Header options hover
+  .menu-item {
+    transition: all 0.2s ease;
+    border-radius: 8px;
+
+    &:hover {
+      background-color: var(--theme-hover-bg) !important;
+      color: var(--theme-accent) !important;
+    }
+
+    &.logout:hover {
+      background-color: #FEE2E2 !important;
+      color: #DC2626 !important;
+    }
+  }
+
+  // Toggle switch animation
+  .switch-toggle {
+    .slider-round {
+      border: 1.5px solid var(--theme-border);
+      
+      &::before {
+        content: "";
+        position: absolute;
+        height: 16px;
+        width: 16px;
+        left: 2px;
+        bottom: 2px;
+        background-color: white;
+        border-radius: 50%;
+        transition: 0.3s;
+        box-shadow: 0 1px 3px rgba(0,0,0,0.15);
+      }
+    }
+
+    input:checked + .slider-round {
+      background-color: var(--theme-accent) !important;
+      border-color: var(--theme-accent) !important;
+
+      &::before {
+        transform: translateX(20px);
+      }
+    }
+  }
+
+  // Visual card effects
+  .visual-credit-card {
+    position: relative;
+    border: 1.5px solid rgba(255,255,255,0.08);
+    background: linear-gradient(135deg, #1E293B 0%, #0F172A 100%) !important;
+    box-shadow: 0 12px 28px rgba(15, 23, 42, 0.3) !important;
+
+    .card-chip {
+      background: linear-gradient(135deg, #FBBF24 0%, #D97706 100%) !important;
+    }
+  }
+
+  // Contact Pill active effect
+  .contact-pill {
+    border: 1.5px solid var(--theme-border) !important;
+    transition: all 0.2s ease !important;
+
+    &:hover {
+      border-color: var(--theme-accent) !important;
+      background-color: var(--theme-hover-bg) !important;
+      transform: translateY(-1px);
+    }
+
+    &:active {
+      transform: scale(0.96);
+    }
+  }
+
+  // Submit button premium hover
+  .bank-submit-btn {
+    transition: all 0.2s ease !important;
+    
+    &:hover {
+      filter: brightness(1.08) !important;
+      box-shadow: 0 8px 20px rgba(var(--theme-accent-rgb), 0.3) !important;
+      transform: translateY(-1px);
+    }
+
+    &:active {
+      transform: scale(0.97);
+    }
+  }
+
+  // Transaction items and links list
+  .transaction-item {
+    transition: all 0.2s ease;
+    border-bottom: 1.5px solid var(--theme-border) !important;
+
+    &:hover {
+      background-color: var(--theme-hover-bg) !important;
+    }
+  }
+
+  .control-item {
+    border-bottom: 1.5px solid var(--theme-border) !important;
+    
+    &.link {
+      transition: all 0.2s ease;
+      cursor: pointer;
+
+      &:hover {
+        background-color: var(--theme-hover-bg) !important;
+      }
+    }
+  }
+
+  // Promos
+  .promo-banner {
+    transition: all 0.25s ease !important;
+
+    &:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 20px rgba(0,0,0,0.08) !important;
+    }
+
+    &:active {
+      transform: scale(0.98);
+    }
+  }
+
+  // Modal alert button
+  .bank-dialog-modal {
+    button {
+      transition: all 0.2s ease;
+
+      &:hover {
+        filter: brightness(1.1);
+        box-shadow: 0 4px 12px rgba(var(--theme-accent-rgb), 0.25);
+      }
+
+      &:active {
+        transform: scale(0.96);
+      }
+    }
+  }
+
+  // Bottom Navigation Buttons hover states
+  .banking-bottom-nav {
+    .nav-btn {
+      transition: all 0.2s ease;
+      border-radius: 12px;
+
+      &:hover {
+        background-color: var(--theme-hover-bg) !important;
+        color: var(--theme-accent) !important;
+      }
+    }
+  }
+
+  // ── BIZUM TAB STYLES (shared by both banks) ──────────────────────────────
+  .bank-bizum-view {
+    .bizum-hero-icon {
+      width: 56px;
+      height: 56px;
+      border-radius: 50%;
+      background-color: var(--theme-icon-bg, #E4E6EB);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--theme-accent);
+      font-size: 1.5rem;
+      margin: 0 auto;
+    }
+
+    .bizum-form-field {
+      display: flex;
+      flex-direction: column;
+      gap: 0.45rem;
+
+      label {
+        font-size: 0.82rem;
+        font-weight: 800;
+        color: var(--theme-text-muted);
+        text-transform: uppercase;
+        letter-spacing: 0.3px;
+      }
+
+      .bizum-input-wrapper {
+        position: relative;
+        display: flex;
+        align-items: center;
+
+        .bizum-field-icon {
+          position: absolute;
+          left: 14px;
+          color: var(--theme-accent);
+          font-size: 1.05rem;
+        }
+
+        input {
+          width: 100%;
+          padding: 0.85rem 1rem 0.85rem 2.6rem;
+          border: 1.5px solid var(--theme-border);
+          border-radius: 14px;
+          background-color: var(--theme-surface-bg);
+          color: var(--theme-text-main);
+          font-size: 0.95rem;
+          font-weight: 700;
+          font-family: inherit;
+          outline: none;
+          transition: border-color 0.2s ease;
+          box-sizing: border-box;
+
+          &:focus {
+            border-color: var(--theme-accent);
+          }
+        }
+      }
+    }
+
+    .bizum-error-banner {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      padding: 0.85rem 1rem;
+      background-color: #FEE2E2;
+      border: 1.5px solid #FCA5A5;
+      border-radius: 14px;
+      color: #991B1B;
+      font-size: 0.85rem;
+      font-weight: 800;
+      line-height: 1.4;
+    }
+
+    .bizum-actions-row {
+      display: flex;
+      gap: 0.75rem;
+
+      .bizum-cancel-btn {
+        flex: 1;
+        padding: 0.9rem;
+        background-color: var(--theme-surface-bg);
+        border: 1.5px solid var(--theme-border);
+        border-radius: 14px;
+        color: var(--theme-text-main);
+        font-size: 0.9rem;
+        font-weight: 800;
+        cursor: pointer;
+        font-family: inherit;
+        transition: all 0.2s ease;
+
+        &:hover { background-color: var(--theme-hover-bg); }
+      }
+
+      .bizum-submit-btn {
+        flex: 2;
+        padding: 0.9rem;
+        background-color: var(--theme-accent);
+        border: none;
+        border-radius: 14px;
+        color: #FFFFFF;
+        font-size: 0.9rem;
+        font-weight: 900;
+        cursor: pointer;
+        font-family: inherit;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 0.5rem;
+        transition: all 0.2s ease;
+        box-shadow: 0 6px 16px rgba(0,0,0,0.1);
+
+        &:hover { filter: brightness(1.08); transform: translateY(-1px); }
+        &:active { transform: scale(0.97); }
+      }
+    }
+  }
+}
+
+// ── BRUTALIST OVERRIDES for Banco Santanboom ──────────────────────────────────
+// Applied as a modifier on top of .theme-banking, giving Neo-Brutalist aesthetics:
+// no rounded corners, heavy borders, and flat offset shadows.
+.theme-banking.theme-santanboom {
+
+  // 1. Zero out ALL border-radius except FontAwesome pseudo-elements and the credit card chip
+  *:not(.fa):not(.fas):not(.far):not(.fab):not([class*='fa-']) {
+    border-radius: 0 !important;
+  }
+
+  // 2. Brutalist heavy borders on key containers
+  .bank-balance-card {
+    border: 3px solid #0F172A !important;
+    box-shadow: 5px 5px 0px #0F172A !important;
+  }
+
+  .bank-menu-dropdown {
+    border: 3px solid #0F172A !important;
+    box-shadow: 4px 4px 0px #0F172A !important;
+  }
+
+  .bank-dialog-modal {
+    border: 3px solid #0F172A !important;
+    box-shadow: 6px 6px 0px #0F172A !important;
+  }
+
+  .visual-credit-card {
+    border: 3px solid rgba(255,255,255,0.3) !important;
+    box-shadow: 5px 5px 0px #0F172A !important;
+  }
+
+  .card-controls-list,
+  .bank-transactions-list {
+    border: 3px solid #0F172A !important;
+    box-shadow: 3px 3px 0px #0F172A !important;
+  }
+
+  .promo-banner {
+    border: 2.5px solid #0F172A !important;
+    box-shadow: 3px 3px 0px #0F172A !important;
+    transition: none !important;
+
+    &:hover {
+      transform: translate(-2px, -2px) !important;
+      box-shadow: 5px 5px 0px #0F172A !important;
+    }
+    &:active {
+      transform: translate(2px, 2px) !important;
+      box-shadow: 1px 1px 0px #0F172A !important;
+    }
+  }
+
+  .history-card {
+    border: 2.5px solid #0F172A !important;
+    box-shadow: 3px 3px 0px #0F172A !important;
+  }
+
+  .contact-pill {
+    border: 2px solid #0F172A !important;
+    box-shadow: 2px 2px 0px #0F172A !important;
+    transition: none !important;
+
+    &:hover {
+      transform: translate(-1px, -1px) !important;
+      box-shadow: 3px 3px 0px #0F172A !important;
+    }
+  }
+
+  // 3. Flat-shadow submit button (instead of blurred glow)
+  .bank-submit-btn {
+    border: 2px solid #0F172A !important;
+    box-shadow: 4px 4px 0px #0F172A !important;
+    transition: none !important;
+
+    &:hover {
+      transform: translate(-2px, -2px) !important;
+      box-shadow: 6px 6px 0px #0F172A !important;
+      filter: none !important;
+    }
+    &:active {
+      transform: translate(2px, 2px) !important;
+      box-shadow: 1px 1px 0px #0F172A !important;
+    }
+  }
+
+  .bizum-submit-btn {
+    border: 2px solid #0F172A !important;
+    box-shadow: 4px 4px 0px #0F172A !important;
+    transition: none !important;
+
+    &:hover {
+      transform: translate(-2px, -2px) !important;
+      box-shadow: 6px 6px 0px #0F172A !important;
+      filter: none !important;
+    }
+    &:active {
+      transform: translate(2px, 2px) !important;
+      box-shadow: 1px 1px 0px #0F172A !important;
+    }
+  }
+
+  .bizum-cancel-btn {
+    border: 2px solid #0F172A !important;
+    box-shadow: 3px 3px 0px #0F172A !important;
+    transition: none !important;
+  }
+
+  // 4. Minimal icon treatment: remove pastels, use transparent with border outline
+  .promo-icon {
+    background-color: transparent !important;
+    border: 2px solid currentColor !important;
+    box-shadow: none !important;
+  }
+
+  .icon-wrapper {
+    background-color: transparent !important;
+    border: 2px solid var(--theme-accent) !important;
+    box-shadow: none !important;
+  }
+
+  .tx-icon-wrapper {
+    background-color: transparent !important;
+    border: 2px solid currentColor !important;
+    box-shadow: none !important;
+  }
+
+  // 5. Brutalist input fields
+  .bizum-form-field .bizum-input-wrapper input,
+  input[type="text"] {
+    border: 2.5px solid #0F172A !important;
+    box-shadow: 2px 2px 0px #0F172A !important;
+
+    &:focus {
+      box-shadow: 4px 4px 0px var(--theme-accent) !important;
+      border-color: var(--theme-accent) !important;
+    }
+  }
+
+  // 6. Brutalist bottom nav
+  .banking-bottom-nav {
+    border-top: 3px solid #0F172A !important;
+
+    .nav-btn {
+      border-radius: 0 !important;
+      transition: none !important;
+
+      &:hover {
+        background-color: var(--theme-accent) !important;
+        color: #FFFFFF !important;
+      }
+    }
+  }
+
+  // 7. Brutalist modal footer button
+  .bank-dialog-modal button {
+    border: 2px solid #0F172A !important;
+    box-shadow: 3px 3px 0px #0F172A !important;
+    transition: none !important;
+
+    &:hover {
+      transform: translate(-1px, -1px) !important;
+      box-shadow: 4px 4px 0px #0F172A !important;
+      filter: none !important;
+    }
+    &:active {
+      transform: translate(2px, 2px) !important;
+      box-shadow: 1px 1px 0px #0F172A !important;
+    }
+  }
+
+  // 8. Menu items — sharp hover
+  .menu-item {
+    border-radius: 0 !important;
+    transition: none !important;
+
+    &:hover {
+      background-color: var(--theme-accent) !important;
+      color: #FFFFFF !important;
+    }
+
+    &.logout:hover {
+      background-color: #DC2626 !important;
+      color: #FFFFFF !important;
+    }
+  }
+
+  // 9. Eye button and quick action buttons — clear borders
+  .eye-btn {
+    border: 2px solid rgba(255,255,255,0.5) !important;
+    box-shadow: none !important;
+  }
+
+  .action-btn-circle .icon-wrapper {
+    border: 2px solid var(--theme-accent) !important;
+    background-color: transparent !important;
   }
 }
