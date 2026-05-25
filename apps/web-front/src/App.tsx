@@ -46,6 +46,18 @@ export default function App() {
   const [bizumAmount, setBizumAmount] = useState<string>('');
   const [bizumError, setBizumError] = useState<string | null>(null);
 
+  // Clock App states
+  const [clockTab, setClockTab] = useState<'ALARM' | 'WORLD' | 'TIMER' | 'STOPWATCH'>('ALARM');
+  const [alarmActive, setAlarmActive] = useState<boolean>(false);
+  const [worldCities, setWorldCities] = useState<{name: string, timeOffset: number}[]>([{name: 'Madrid', timeOffset: 0}]);
+  const [timerRunning, setTimerRunning] = useState<boolean>(false);
+  const [stopwatchRunning, setStopwatchRunning] = useState<boolean>(false);
+  const [timerTime, setTimerTime] = useState<number>(300); // 5 mins
+  const [stopwatchTime, setStopwatchTime] = useState<number>(0);
+  const [showAddCityModal, setShowAddCityModal] = useState<boolean>(false);
+  const [newCityName, setNewCityName] = useState<string>('');
+  const [dummyAlarmsActive, setDummyAlarmsActive] = useState<Record<number, boolean>>({});
+
   // Independent rotation state tracking
   const [currentVerIndex, setCurrentVerIndex] = useState<number>(0);
   const [currentObjIndex, setCurrentObjIndex] = useState<number>(0);
@@ -55,19 +67,17 @@ export default function App() {
   // Decoupled clean interface count per level
   const getVersionsCountForLevel = (lv: number): number => {
     if (lv === 1) return 3; // 3 visual styles
-    if (lv === 2) return 2; // 2 palettes
-    if (lv === 3 || lv === 4) return 2; // 2 delivery themes
-    if (lv === 5) return 2; // 2 E-Commerce palettes
-    if (lv === 6) return 2; // 2 Banking palettes
+    if (lv === 2) return 3; // 3 clock visual styles
+    if (lv === 3) return 2; // 2 delivery themes
+    if (lv === 4) return 2; // 2 Banking palettes
     return 2;
   };
 
   const getObjectivesCountForLevel = (lv: number): number => {
     if (lv === 1) return 3; // 3 objectives
-    if (lv === 2) return 2; // 2 objectives
-    if (lv === 3 || lv === 4) return 12; // 12 target food items
-    if (lv === 5) return 2; // 2 E-Commerce objectives
-    if (lv === 6) return 4; // 4 Banking objectives: 2 transfers + block card + Bizum
+    if (lv === 2) return 4; // 4 clock objectives
+    if (lv === 3) return 12; // 12 target food items
+    if (lv === 4) return 5; // 5 Banking objectives: 2 transfers + block card + Bizum + check PIN
     return 2;
   };
 
@@ -129,6 +139,29 @@ export default function App() {
     return () => clearInterval(interval);
   }, []);
 
+  // Clock effects for timer and stopwatch
+  useEffect(() => {
+    let interval: ReturnType<typeof setInterval>;
+    if (timerRunning && timerTime > 0) {
+      interval = setInterval(() => {
+        setTimerTime(prev => prev - 1);
+      }, 1000);
+    } else if (timerTime === 0) {
+      setTimerRunning(false);
+    }
+    return () => clearInterval(interval);
+  }, [timerRunning, timerTime]);
+
+  useEffect(() => {
+    let interval: ReturnType<typeof setInterval>;
+    if (stopwatchRunning) {
+      interval = setInterval(() => {
+        setStopwatchTime(prev => prev + 10);
+      }, 10);
+    }
+    return () => clearInterval(interval);
+  }, [stopwatchRunning]);
+
   // Fetch procedurally-generated screen from Fastify backend
   const fetchScreen = async (selectedLevel: number, verIdx: number, objIdx: number) => {
     setLoading(true);
@@ -160,6 +193,15 @@ export default function App() {
     setBizumConcept('');
     setBizumAmount('');
     setBizumError(null);
+    
+    // Reset Clock App States
+    setClockTab('ALARM');
+    setAlarmActive(false);
+    setWorldCities([{name: 'Madrid', timeOffset: 0}]);
+    setTimerRunning(false);
+    setStopwatchRunning(false);
+    setTimerTime(300);
+    setStopwatchTime(0);
     
     try {
       commitNextIndices(selectedLevel, verIdx, objIdx);
@@ -328,6 +370,15 @@ export default function App() {
         setBizumConcept('');
         setBizumAmount('');
         setBizumError(null);
+        
+        // Reset Clock App States
+        setClockTab('ALARM');
+        setAlarmActive(false);
+        setWorldCities([{name: 'Madrid', timeOffset: 0}]);
+        setTimerRunning(false);
+        setStopwatchRunning(false);
+        setTimerTime(300);
+        setStopwatchTime(0);
 
         setAppState('PLAYING');
       }
@@ -889,22 +940,6 @@ export default function App() {
           </div>
         </div>
 
-        {/* Persistent Floating Assistive "Ver Objetivo" Button inside custom view */}
-        {!showObjective && !success && (
-          <button 
-            className="floating-objective-btn"
-            onClick={() => {
-              setPendingScreen(screen);
-              setShowObjective(true);
-            }}
-            title="Ver objetivo de la misión"
-            aria-label="Ver objetivo de la misión"
-            style={{ bottom: '80px', right: '16px' }}
-          >
-            <i className="fas fa-bullseye"></i>
-            <span>Ver Objetivo</span>
-          </button>
-        )}
       </div>
     );
   };
@@ -973,11 +1008,6 @@ export default function App() {
       const nextLocked = !cardLocked;
       setCardLocked(nextLocked);
       setBankAlert(nextLocked ? '🔒 Tarjeta Bloqueada:\nTu tarjeta ha sido bloqueada de forma segura para evitar cargos.' : '🔓 Tarjeta Desbloqueada:\nTu tarjeta está activa y lista para operar.');
-      
-      // Check if active mission objective is blocking the card
-      if (screen?.missionText.includes('Bloquea temporalmente')) {
-        setSuccess(true);
-      }
     };
 
     const handleBizumSubmit = () => {
@@ -1531,28 +1561,234 @@ export default function App() {
                 <p style={{ margin: 0, fontSize: '0.85rem', color: 'var(--theme-text-main)', fontWeight: 700, lineHeight: 1.5, whiteSpace: 'pre-line' }}>{bankAlert}</p>
               </div>
               <div className="modal-footer" style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '0.2rem' }}>
-                <button onClick={() => setBankAlert(null)} style={{ padding: '0.65rem 1.5rem', backgroundColor: 'var(--theme-accent)', border: 'none', borderRadius: '10px', color: '#FFFFFF', fontSize: '0.85rem', fontWeight: 800, cursor: 'pointer', boxShadow: '0 4px 10px rgba(0,0,0,0.1)', fontFamily: 'Bree Serif, Roboto, sans-serif' }}>Entendido</button>
+                <button onClick={() => {
+                  if (cardLocked && screen?.missionText.includes('Bloquea temporalmente')) {
+                    setSuccess(true);
+                  }
+                  if (bankAlert?.includes('Consulta de PIN') && screen?.missionText.includes('Consultar el PIN')) {
+                    setSuccess(true);
+                  }
+                  setBankAlert(null);
+                }} style={{ padding: '0.65rem 1.5rem', backgroundColor: 'var(--theme-accent)', border: 'none', borderRadius: '10px', color: '#FFFFFF', fontSize: '0.85rem', fontWeight: 800, cursor: 'pointer', boxShadow: '0 4px 10px rgba(0,0,0,0.1)', fontFamily: 'Bree Serif, Roboto, sans-serif' }}>Entendido</button>
               </div>
             </div>
           </div>
         )}
 
-        {/* Persistent Floating Assistive "Ver Objetivo" Button inside custom view */}
-        {!showObjective && !success && (
-          <button 
-            className="floating-objective-btn"
-            onClick={() => {
-              setPendingScreen(screen);
-              setShowObjective(true);
-            }}
-            title="Ver objetivo de la misión"
-            aria-label="Ver objetivo de la misión"
-            style={{ bottom: '80px', right: '16px' }}
-          >
-            <i className="fas fa-bullseye"></i>
-            <span>Ver Objetivo</span>
+      </div>
+    );
+  };
+
+  const renderClockApp = () => {
+    if (!screen) return null;
+
+    // Detect theme version passed via HEADER_MISSION component
+    const headerComp = screen.components.find(c => c.type === 'HEADER_MISSION');
+    const version = headerComp?.props?.version || 1; // 1: Glass, 2: Neomorph, 3: Zen
+    const themeClass = `clock-theme-${version}`;
+
+    // Objective checks
+    const checkAlarmObjective = () => {
+      if (screen.missionText.toLowerCase().includes('activa la alarma')) {
+        setSuccess(true);
+      }
+    };
+    const checkWorldObjective = () => {
+      if (screen.missionText.toLowerCase().includes('zona horaria')) {
+        setSuccess(true);
+      }
+    };
+    const checkTimerObjective = () => {
+      if (screen.missionText.includes('Inicia el temporizador')) {
+        setSuccess(true);
+      }
+    };
+    const checkStopwatchObjective = () => {
+      if (screen.missionText.includes('Cronometra 5 segundos') && stopwatchTime >= 5000) {
+        setSuccess(true);
+      }
+    };
+
+    const formatTimer = (sec: number) => {
+      const m = Math.floor(sec / 60).toString().padStart(2, '0');
+      const s = (sec % 60).toString().padStart(2, '0');
+      return `${m}:${s}`;
+    };
+
+    const formatStopwatch = (ms: number) => {
+      const m = Math.floor(ms / 60000).toString().padStart(2, '0');
+      const s = Math.floor((ms % 60000) / 1000).toString().padStart(2, '0');
+      const msPart = Math.floor((ms % 1000) / 10).toString().padStart(2, '0');
+      return `${m}:${s}.${msPart}`;
+    };
+
+    const presetAlarms = [
+      { time: '07:00', label: 'Despertador', meridiem: 'AM', isTarget: true },
+      { time: '09:30', label: 'Pastilla', meridiem: 'AM', isTarget: false },
+      { time: '02:00', label: 'Comida', meridiem: 'PM', isTarget: false },
+      { time: '06:00', label: 'Gimnasio', meridiem: 'PM', isTarget: false }
+    ];
+
+    return (
+      <div className={`clock-app-container ${themeClass}`}>
+        <div className="clock-content-area">
+          {clockTab === 'ALARM' && (
+            <div className="clock-view-alarm">
+              <h2 className="clock-view-title">Alarmas</h2>
+              <div className="alarm-list">
+                {presetAlarms.map((alarm, idx) => (
+                  <div className="alarm-card" key={idx}>
+                    <div className="alarm-info">
+                      <div className="alarm-time">{alarm.time} <span className="alarm-meridiem">{alarm.meridiem}</span></div>
+                      <div className="alarm-label">{alarm.label}</div>
+                    </div>
+                    <label className="clock-switch">
+                      <input 
+                        type="checkbox" 
+                        checked={alarm.isTarget ? alarmActive : (dummyAlarmsActive[idx] || false)} 
+                        onChange={(e) => {
+                          if (alarm.isTarget) {
+                            setAlarmActive(e.target.checked);
+                            if (e.target.checked) checkAlarmObjective();
+                          } else {
+                            setDummyAlarmsActive(prev => ({
+                              ...prev,
+                              [idx]: e.target.checked
+                            }));
+                          }
+                        }} 
+                      />
+                      <span className="clock-slider"></span>
+                    </label>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {clockTab === 'WORLD' && (
+            <div className="clock-view-world">
+              <h2 className="clock-view-title">Reloj Mundial</h2>
+              <div className="world-list">
+                {worldCities.map((city, idx) => (
+                  <div key={idx} className="world-city-card">
+                    <div className="world-city-name">{city.name}</div>
+                    <div className="world-city-time">{currentTime}</div>
+                  </div>
+                ))}
+              </div>
+              <button className="clock-fab-btn" onClick={() => setShowAddCityModal(true)}>
+                <i className="fas fa-plus"></i>
+              </button>
+
+              {showAddCityModal && (
+                <div className="city-modal-overlay">
+                  <div className="city-modal-content">
+                    <h3>Añadir Ciudad</h3>
+                    <input 
+                      type="text" 
+                      placeholder="Ej: Tokio, Londres..."
+                      value={newCityName}
+                      onChange={(e) => setNewCityName(e.target.value)}
+                      autoFocus
+                    />
+                    <div className="city-modal-actions">
+                      <button className="btn-cancel" onClick={() => {
+                        setShowAddCityModal(false);
+                        setNewCityName('');
+                      }}>Cancelar</button>
+                      <button className="btn-add" onClick={() => {
+                        if (newCityName.trim()) {
+                          const city = newCityName.trim();
+                          let offset = 0;
+                          if (city.toLowerCase().includes('tokio') || city.toLowerCase().includes('tokyo')) offset = 9;
+                          else if (city.toLowerCase().includes('londres') || city.toLowerCase().includes('london')) offset = 1;
+                          else if (city.toLowerCase().includes('nueva york') || city.toLowerCase().includes('new york')) offset = -5;
+                          else if (city.toLowerCase().includes('sídney') || city.toLowerCase().includes('sydney')) offset = 11;
+                          else offset = Math.floor(Math.random() * 24) - 12;
+
+                          setWorldCities([...worldCities, {name: city, timeOffset: offset}]);
+                          
+                          if (city.toLowerCase().includes('tokio') || city.toLowerCase().includes('tokyo')) {
+                            checkWorldObjective();
+                          }
+                          setShowAddCityModal(false);
+                          setNewCityName('');
+                        }
+                      }}>Añadir</button>
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+
+          {clockTab === 'TIMER' && (
+            <div className="clock-view-timer">
+              <h2 className="clock-view-title">Temporizador</h2>
+              <div className="clock-big-display">
+                {formatTimer(timerTime)}
+              </div>
+              <div className="clock-controls">
+                <button className="clock-btn clock-btn-secondary" onClick={() => {
+                  setTimerRunning(false);
+                  setTimerTime(300);
+                }}>Cancelar</button>
+                <button className="clock-btn clock-btn-primary" onClick={() => {
+                  setTimerRunning(!timerRunning);
+                  if (!timerRunning) checkTimerObjective();
+                }}>
+                  {timerRunning ? 'Pausar' : 'Iniciar'}
+                </button>
+              </div>
+            </div>
+          )}
+
+          {clockTab === 'STOPWATCH' && (
+            <div className="clock-view-stopwatch">
+              <h2 className="clock-view-title">Cronómetro</h2>
+              <div className="clock-big-display">
+                {formatStopwatch(stopwatchTime)}
+              </div>
+              <div className="clock-controls">
+                <button className="clock-btn clock-btn-secondary" onClick={() => {
+                  setStopwatchRunning(false);
+                  setStopwatchTime(0);
+                }}>Vuelta</button>
+                <button className="clock-btn clock-btn-primary" onClick={() => {
+                  if (stopwatchRunning) {
+                    setStopwatchRunning(false);
+                    checkStopwatchObjective();
+                  } else {
+                    setStopwatchRunning(true);
+                  }
+                }}>
+                  {stopwatchRunning ? 'Detener' : 'Iniciar'}
+                </button>
+              </div>
+            </div>
+          )}
+        </div>
+
+        <div className="clock-tab-bar">
+          <button className={`clock-tab-btn ${clockTab === 'ALARM' ? 'active' : ''}`} onClick={() => setClockTab('ALARM')}>
+            <i className={themeClass === 'clock-theme-2' ? 'far fa-bell' : themeClass === 'clock-theme-3' ? 'fas fa-clock-rotate-left' : 'fas fa-bell'}></i>
+            <span>Alarmas</span>
           </button>
-        )}
+          <button className={`clock-tab-btn ${clockTab === 'WORLD' ? 'active' : ''}`} onClick={() => setClockTab('WORLD')}>
+            <i className={themeClass === 'clock-theme-2' ? 'far fa-compass' : themeClass === 'clock-theme-3' ? 'fas fa-earth-americas' : 'fas fa-globe'}></i>
+            <span>Mundial</span>
+          </button>
+          <button className={`clock-tab-btn ${clockTab === 'TIMER' ? 'active' : ''}`} onClick={() => setClockTab('TIMER')}>
+            <i className={themeClass === 'clock-theme-2' ? 'far fa-hourglass' : themeClass === 'clock-theme-3' ? 'fas fa-hourglass-end' : 'fas fa-hourglass-half'}></i>
+            <span>Temp.</span>
+          </button>
+          <button className={`clock-tab-btn ${clockTab === 'STOPWATCH' ? 'active' : ''}`} onClick={() => setClockTab('STOPWATCH')}>
+            <i className={themeClass === 'clock-theme-2' ? 'far fa-clock' : themeClass === 'clock-theme-3' ? 'fas fa-stopwatch' : 'fas fa-stopwatch'}></i>
+            <span>Crono</span>
+          </button>
+        </div>
+        
       </div>
     );
   };
@@ -1637,8 +1873,15 @@ export default function App() {
                     {[1, 2, 3, 4, 5, 6, 7, 8, 9].map((num) => (
                       <button
                         key={num}
-                        onClick={() => setLevel(num)}
+                        onClick={() => {
+                          if (num >= 5) {
+                            alert('Funcionalidad próximamente disponible');
+                          } else {
+                            setLevel(num);
+                          }
+                        }}
                         className={`menu-level-btn ${level === num ? 'active' : ''}`}
+                        style={{ opacity: num >= 5 ? 0.5 : 1, cursor: num >= 5 ? 'not-allowed' : 'pointer' }}
                       >
                         {num}
                       </button>
@@ -1695,6 +1938,8 @@ export default function App() {
                 renderDeliveryApp()
               ) : screen.appTemplate === 'BANKING' ? (
                 renderBankingApp()
+              ) : screen.appTemplate === 'CLOCK' ? (
+                renderClockApp()
               ) : (
                 <>
                   {/* TOP NAV — Social Network fixed header */}
@@ -2016,22 +2261,6 @@ export default function App() {
                   </div>
                 )}
 
-                {/* Persistent Floating Assistive "Ver Objetivo" Button */}
-                {/* Persistent Floating Assistive "Ver Objetivo" Button */}
-                {!showObjective && !success && (
-                  <button 
-                    className="floating-objective-btn"
-                    onClick={() => {
-                      setPendingScreen(screen);
-                      setShowObjective(true);
-                    }}
-                    title="Ver objetivo de la misión"
-                    aria-label="Ver objetivo de la misión"
-                  >
-                    <i className="fas fa-bullseye"></i>
-                    <span>Ver Objetivo</span>
-                  </button>
-                )}
               </>
               )
             )}
@@ -2109,7 +2338,24 @@ export default function App() {
                     </button>
                   </div>
                 )}
+                
               </>
+            )}
+
+            {/* Persistent Floating Assistive "Ver Objetivo" Button inside phone - FOR ALL APPS */}
+            {!showObjective && !success && screen && (
+              <button 
+                className="floating-objective-btn"
+                onClick={() => {
+                  setPendingScreen(screen);
+                  setShowObjective(true);
+                }}
+                title="Ver objetivo de la misión"
+                aria-label="Ver objetivo de la misión"
+              >
+                <i className="fas fa-bullseye"></i>
+                <span>Ver Objetivo</span>
+              </button>
             )}
 
             <div className="home-indicator"></div>

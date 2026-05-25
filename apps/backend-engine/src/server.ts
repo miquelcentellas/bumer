@@ -80,6 +80,26 @@ const PALETTES: Record<string, ThemePalette[]> = {
       textMain: '#7A1C1C',
       accentColor: '#C53030',
     }
+  ],
+  CLOCK: [
+    { // Theme 1: Black Glassmorphism
+      primaryBg: '#121212',
+      surfaceBg: 'rgba(30, 30, 30, 0.6)',
+      textMain: '#E0E0E0',
+      accentColor: '#BB86FC',
+    },
+    { // Theme 2: White Neomorphism
+      primaryBg: '#E0E5EC',
+      surfaceBg: '#E0E5EC',
+      textMain: '#2D3748',
+      accentColor: '#3182CE',
+    },
+    { // Theme 3: Green Zen
+      primaryBg: '#F0FDF4',
+      surfaceBg: '#DCFCE7',
+      textMain: '#14532D',
+      accentColor: '#16A34A',
+    }
   ]
 };
 
@@ -90,7 +110,7 @@ const genId = () => Math.random().toString(36).substring(2, 9);
 server.get('/api/screen/generate', async (request, reply) => {
   const query = request.query as { level?: string; versionIndex?: string; objectiveIndex?: string };
   const requestedLevel = parseInt(query.level || '1', 10);
-  const level = Math.min(6, Math.max(1, requestedLevel));
+  const level = Math.min(4, Math.max(1, requestedLevel));
   const versionIndex = query.versionIndex !== undefined ? parseInt(query.versionIndex, 10) : undefined;
   const objectiveIndex = query.objectiveIndex !== undefined ? parseInt(query.objectiveIndex, 10) : undefined;
 
@@ -213,34 +233,33 @@ server.get('/api/screen/generate', async (request, reply) => {
     }
 
   } else if (level === 2) {
-    // ── NIVEL 2: Portfolio/Landing — Pulsa el botón Continuar o Acceder ────────
-    appTemplate = 'PORTFOLIO';
+    // ── NIVEL 2: Reloj ────────────────────────────────────────────────────────
+    appTemplate = 'CLOCK';
     layoutStructure = 'LIST';
-    const palIndex = versionIndex !== undefined ? versionIndex % PALETTES.PORTFOLIO.length : Math.floor(Math.random() * PALETTES.PORTFOLIO.length);
-    themeColors = PALETTES.PORTFOLIO[palIndex];
+    const ver = versionIndex !== undefined ? (versionIndex % 3) : Math.floor(Math.random() * 3);
+    themeColors = PALETTES.CLOCK[ver];
     
-    const objType = objectiveIndex !== undefined ? objectiveIndex % 2 : Math.floor(Math.random() * 2);
-    let btnLabel = 'Continuar';
+    const objType = objectiveIndex !== undefined ? objectiveIndex % 4 : Math.floor(Math.random() * 4);
     if (objType === 0) {
-      missionText = 'Continúa al siguiente paso.';
-      btnLabel = 'Continuar';
+      missionText = 'Activa la alarma de las 07:00.';
+    } else if (objType === 1) {
+      missionText = 'Añade una nueva zona horaria.';
+    } else if (objType === 2) {
+      missionText = 'Inicia el temporizador.';
     } else {
-      missionText = 'Accede a la siguiente sección.';
-      btnLabel = 'Acceder';
+      missionText = 'Cronometra 5 segundos.';
     }
 
-    components.push({ id: genId(), type: 'HEADER_MISSION', label: 'Bienvenido a Búmer', props: { hierarchy: 'high' } });
-    components.push({ id: genId(), type: 'TEXT_BLOCK',
-      label: `Búmer es una plataforma diseñada para ejercitar tu mente mediante desafíos cotidianos interactivos. Para completar este nivel, lee este texto y luego busca el botón azul de "${btnLabel}".`,
-      props: { hierarchy: 'medium' } });
-    components.push({ id: genId(), type: 'TEXT_BLOCK',
-      label: 'Consejo: Los botones de acción principal suelen estar en la parte inferior de la pantalla con colores de alto contraste.',
-      props: { hierarchy: 'low' } });
-    components.push({ id: genId(), type: 'BUTTON', label: btnLabel,
-      props: { intent: 'primary', hierarchy: 'high', icon: 'circle-chevron-right', isTarget: true } });
+    // Pass the version down via a dummy component so the frontend knows exactly which style to apply
+    components.push({
+      id: genId(),
+      type: 'HEADER_MISSION',
+      label: 'Reloj',
+      props: { hierarchy: 'high', version: ver + 1 } // version 1, 2 or 3
+    });
 
-  } else if (level >= 3 && level <= 4) {
-    // ── NIVELES 3-4: Delivery — Encuentra el producto correcto ───────────────
+  } else if (level === 3) {
+    // ── NIVEL 3: Delivery — Encuentra el producto correcto ───────────────
     appTemplate = 'DELIVERY';
     layoutStructure = 'GRID';
     
@@ -317,138 +336,31 @@ server.get('/api/screen/generate', async (request, reply) => {
       });
     });
 
-  } else if (level === 5) {
-    // ── NIVEL 5: E-Commerce estrictamente ──────────────────────────────────
-    appTemplate = 'ECOMMERCE';
-    layoutStructure = 'DENSE';
-    const palIndex = versionIndex !== undefined ? versionIndex % 2 : Math.floor(Math.random() * 2);
-    themeColors = PALETTES.ECOMMERCE[palIndex];
-
-    const objIndex = objectiveIndex !== undefined ? objectiveIndex % 2 : Math.floor(Math.random() * 2);
-
-    let productLabel = 'Cafetera Eléctrica Express Premium';
-    let productPrice = '49.99€ (Antes 99.99€)';
-    let productIcon = 'coffee';
-
-    if (objIndex === 0) {
-      missionText = 'Agrega la cafetera en oferta a tu carrito.';
-      productLabel = 'Cafetera Eléctrica Express Premium';
-      productPrice = '49.99€ (Antes 99.99€)';
-      productIcon = 'coffee';
-    } else {
-      missionText = 'Agrega la licuadora en oferta a tu carrito.';
-      productLabel = 'Licuadora Express Profesional';
-      productPrice = '34.99€ (Antes 69.99€)';
-      productIcon = 'plug'; // using generic electric/plug icon
-    }
-
-    components.push({
-      id: genId(),
-      type: 'SEARCH_BAR',
-      label: 'Buscar cafeteras, licuadoras...',
-      props: { placeholder: 'ej. Cafetera Italiana' }
-    });
-
-    components.push({
-      id: genId(),
-      type: 'HEADER_MISSION',
-      label: 'Super Tienda - Oferta Flash',
-      props: { hierarchy: 'high', icon: 'shopping-bag' }
-    });
-
-    // Aggressive ad banner (distractor)
-    components.push({
-      id: genId(),
-      type: 'BUTTON',
-      label: '🔥 ¡DESCUENTO DE 90% EN TODO! HACE CLIC AQUÍ 🔥',
-      props: {
-        intent: 'danger',
-        hierarchy: 'high',
-        icon: 'fire',
-        isTarget: false
-      }
-    });
-
-    components.push({
-      id: genId(),
-      type: 'CARD_PRODUCT',
-      label: productLabel,
-      props: {
-        hierarchy: 'high',
-        price: productPrice,
-        icon: productIcon,
-        isTarget: false
-      }
-    });
-
-    // Another distractor
-    components.push({
-      id: genId(),
-      type: 'BUTTON',
-      label: 'Suscribirse al boletín de ofertas',
-      props: {
-        intent: 'secondary',
-        hierarchy: 'low',
-        icon: 'envelope',
-        isTarget: false
-      }
-    });
-
-    // Target action button
-    components.push({
-      id: genId(),
-      type: 'BUTTON',
-      label: 'Añadir al Carrito',
-      props: {
-        intent: 'success',
-        hierarchy: 'high',
-        icon: 'shopping-cart',
-        isTarget: true
-      }
-    });
-
-    // Bottom Nav
-    components.push({
-      id: genId(),
-      type: 'NAV_BAR_BOTTOM',
-      label: 'Tienda',
-      props: { icon: 'store', isTarget: false }
-    });
-    components.push({
-      id: genId(),
-      type: 'NAV_BAR_BOTTOM',
-      label: 'Ofertas',
-      props: { icon: 'percent', isTarget: false }
-    });
-    components.push({
-      id: genId(),
-      type: 'NAV_BAR_BOTTOM',
-      label: 'Mi Perfil',
-      props: { icon: 'user', isTarget: false }
-    });
-
   } else {
-    // ── NIVEL 6: Banca estrictamente ──────────────────────────────────────
+    // ── NIVEL 4: Banca estrictamente ──────────────────────────────────────
     appTemplate = 'BANKING';
     layoutStructure = 'DENSE';
     const palIndex = versionIndex !== undefined ? versionIndex % 2 : Math.floor(Math.random() * 2);
     themeColors = PALETTES.BANKING[palIndex];
 
-    const objIndex = objectiveIndex !== undefined ? objectiveIndex % 4 : Math.floor(Math.random() * 4);
+    const objIndex = objectiveIndex !== undefined ? objectiveIndex % 5 : Math.floor(Math.random() * 5);
 
     let targetAmount = '150.00';
     if (objIndex === 0) {
-      missionText = 'Realiza la transferencia segura de 150.00€.';
+      missionText = 'Realiza la transferencia de 150€.';
       targetAmount = '150.00';
     } else if (objIndex === 1) {
-      missionText = 'Realiza la transferencia segura de 300.00€.';
+      missionText = 'Realiza la transferencia de 300€.';
       targetAmount = '300.00';
     } else if (objIndex === 2) {
       missionText = 'Bloquea temporalmente tu tarjeta de crédito.';
       targetAmount = '0.00'; // Not used for this objective
-    } else {
+    } else if (objIndex === 3) {
       missionText = 'Realiza un Bizum seguro de 50.00€.';
       targetAmount = '50.00'; // Used as reference in Bizum form validation
+    } else {
+      missionText = 'Consultar el PIN de la tarjeta.';
+      targetAmount = '0.00';
     }
 
     components.push({

@@ -9,7 +9,7 @@ export type ComponentType =
   | 'SEARCH_BAR' 
   | 'FORM_INPUT';
 
-export type AppTemplate = 'PORTFOLIO' | 'DELIVERY' | 'ECOMMERCE' | 'BANKING' | 'Red Social';
+export type AppTemplate = 'PORTFOLIO' | 'DELIVERY' | 'ECOMMERCE' | 'BANKING' | 'Red Social' | 'CLOCK';
 
 export interface UIComponent {
   id: string;
