@@ -66,7 +66,7 @@ export default function App() {
   const [flightReturnDate, setFlightReturnDate] = useState<string>('2026-06-20');
   const [flightSearchStep, setFlightSearchStep] = useState<'FORM' | 'RESULTS' | 'CHECKOUT'>('FORM');
   const [flightPaymentMethod, setFlightPaymentMethod] = useState<'CARD' | 'PAYPAL'>('CARD');
-  const [showFlightBaggageModal, setShowFlightBaggageModal] = useState<boolean>(false);
+  const [, setShowFlightBaggageModal] = useState<boolean>(false);
   const [flightBaggageAdded, setFlightBaggageAdded] = useState<boolean>(false);
   const [flightBooked, setFlightBooked] = useState<boolean>(false);
   
@@ -74,8 +74,8 @@ export default function App() {
   const [flightTripType, setFlightTripType] = useState<'IDA_VUELTA' | 'SOLO_IDA' | 'MULTIDESTINO'>('IDA_VUELTA');
   const [flightPassengers, setFlightPassengers] = useState<number>(1);
   const [flightClass, setFlightClass] = useState<'TURISTA' | 'BUSINESS' | 'PRIMERA'>('TURISTA');
-  const [showFlightMenu, setShowFlightMenu] = useState<boolean>(false);
-  const [showExtraOptions, setShowExtraOptions] = useState<boolean>(false);
+  const [, setShowFlightMenu] = useState<boolean>(false);
+  const [, setShowExtraOptions] = useState<boolean>(false);
 
   // Independent rotation state tracking
   const [currentVerIndex, setCurrentVerIndex] = useState<number>(0);
@@ -1875,12 +1875,6 @@ export default function App() {
     };
 
     // Helper common triggers
-    const triggerSearch = () => {
-      if (flightDest.toLowerCase().includes('paris') || flightDest.toLowerCase().includes('parís')) {
-        setFlightBooked(true);
-        setTimeout(() => handleFlightObjectiveCheck(), 100);
-      }
-    };
     const addBaggage = () => {
       setFlightBaggageAdded(true); 
       setShowFlightBaggageModal(false); 
