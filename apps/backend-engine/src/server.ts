@@ -100,6 +100,26 @@ const PALETTES: Record<string, ThemePalette[]> = {
       textMain: '#14532D',
       accentColor: '#16A34A',
     }
+  ],
+  FLIGHTS: [
+    { // Minimalist
+      primaryBg: '#FFFFFF',
+      surfaceBg: '#F3F4F6',
+      textMain: '#111827',
+      accentColor: '#2563EB',
+    },
+    { // Glassmorphism
+      primaryBg: '#1E1E2F',
+      surfaceBg: 'rgba(255, 255, 255, 0.1)',
+      textMain: '#FFFFFF',
+      accentColor: '#A78BFA',
+    },
+    { // Brutalist
+      primaryBg: '#000000',
+      surfaceBg: '#D4FF00',
+      textMain: '#000000',
+      accentColor: '#FF003C',
+    }
   ]
 };
 
@@ -110,7 +130,7 @@ const genId = () => Math.random().toString(36).substring(2, 9);
 server.get('/api/screen/generate', async (request, reply) => {
   const query = request.query as { level?: string; versionIndex?: string; objectiveIndex?: string };
   const requestedLevel = parseInt(query.level || '1', 10);
-  const level = Math.min(4, Math.max(1, requestedLevel));
+  const level = Math.min(5, Math.max(1, requestedLevel));
   const versionIndex = query.versionIndex !== undefined ? parseInt(query.versionIndex, 10) : undefined;
   const objectiveIndex = query.objectiveIndex !== undefined ? parseInt(query.objectiveIndex, 10) : undefined;
 
@@ -336,7 +356,7 @@ server.get('/api/screen/generate', async (request, reply) => {
       });
     });
 
-  } else {
+  } else if (level === 4) {
     // ── NIVEL 4: Banca estrictamente ──────────────────────────────────────
     appTemplate = 'BANKING';
     layoutStructure = 'DENSE';
@@ -356,7 +376,7 @@ server.get('/api/screen/generate', async (request, reply) => {
       missionText = 'Bloquea temporalmente tu tarjeta de crédito.';
       targetAmount = '0.00'; // Not used for this objective
     } else if (objIndex === 3) {
-      missionText = 'Realiza un Bizum seguro de 50.00€.';
+      missionText = 'Realiza un Bizum seguro de 50€.';
       targetAmount = '50.00'; // Used as reference in Bizum form validation
     } else {
       missionText = 'Consultar el PIN de la tarjeta.';
@@ -471,6 +491,32 @@ server.get('/api/screen/generate', async (request, reply) => {
       type: 'NAV_BAR_BOTTOM',
       label: 'Soporte',
       props: { icon: 'question-circle', isTarget: false }
+    });
+  } else if (level === 5) {
+    // ── NIVEL 5: App de Vuelos ──────────────────────────────────────
+    appTemplate = 'FLIGHTS';
+    layoutStructure = 'LIST';
+    const palIndex = versionIndex !== undefined ? versionIndex % 3 : Math.floor(Math.random() * 3);
+    themeColors = PALETTES.FLIGHTS[palIndex];
+
+    const objIndex = objectiveIndex !== undefined ? objectiveIndex % 4 : Math.floor(Math.random() * 4);
+
+    if (objIndex === 0) {
+      missionText = 'Reserva un vuelo a París.';
+    } else if (objIndex === 1) {
+      missionText = 'Añade una maleta a tu reserva y paga un vuelo.';
+    } else if (objIndex === 2) {
+      missionText = 'Compra un vuelo a Tokyo de "Solo ida".';
+    } else {
+      missionText = 'Abre tu tarjeta de embarque.';
+    }
+
+    // Version prop helps frontend decide layout structure (Minimal, Glass, Brutal)
+    components.push({
+      id: genId(),
+      type: 'HEADER_MISSION',
+      label: 'Aerolíneas Búmer',
+      props: { hierarchy: 'high', icon: 'plane', version: palIndex, isTarget: false }
     });
   }
 

@@ -1,5 +1,5 @@
 export type ComponentType = 'HEADER_MISSION' | 'TEXT_BLOCK' | 'BUTTON' | 'CARD_PRODUCT' | 'NAV_BAR_BOTTOM' | 'TOP_NAV_SOCIAL' | 'POST_CARD' | 'SEARCH_BAR' | 'FORM_INPUT';
-export type AppTemplate = 'PORTFOLIO' | 'DELIVERY' | 'ECOMMERCE' | 'BANKING' | 'Red Social';
+export type AppTemplate = 'PORTFOLIO' | 'DELIVERY' | 'ECOMMERCE' | 'BANKING' | 'Red Social' | 'CLOCK' | 'FLIGHTS';
 export interface UIComponent {
     id: string;
     type: ComponentType;

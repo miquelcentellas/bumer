@@ -8,8 +8,7 @@ export type ComponentType =
   | 'POST_CARD'
   | 'SEARCH_BAR' 
   | 'FORM_INPUT';
-
-export type AppTemplate = 'PORTFOLIO' | 'DELIVERY' | 'ECOMMERCE' | 'BANKING' | 'Red Social' | 'CLOCK';
+export type AppTemplate = 'PORTFOLIO' | 'DELIVERY' | 'ECOMMERCE' | 'BANKING' | 'Red Social' | 'CLOCK' | 'FLIGHTS';
 
 export interface UIComponent {
   id: string;

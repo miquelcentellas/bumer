@@ -58,6 +58,25 @@ export default function App() {
   const [newCityName, setNewCityName] = useState<string>('');
   const [dummyAlarmsActive, setDummyAlarmsActive] = useState<Record<number, boolean>>({});
 
+  // Flight App states
+  const [flightTab, setFlightTab] = useState<'SEARCH' | 'TRIPS' | 'BOARDING' | 'PROFILE' | 'EXPLORE' | 'NOTIFICATIONS' | 'MILES' | 'CARS'>('SEARCH');
+  const [flightOrigin, setFlightOrigin] = useState<string>('Madrid (MAD)');
+  const [flightDest, setFlightDest] = useState<string>('');
+  const [flightDate, setFlightDate] = useState<string>('2026-06-15');
+  const [flightReturnDate, setFlightReturnDate] = useState<string>('2026-06-20');
+  const [flightSearchStep, setFlightSearchStep] = useState<'FORM' | 'RESULTS' | 'CHECKOUT'>('FORM');
+  const [flightPaymentMethod, setFlightPaymentMethod] = useState<'CARD' | 'PAYPAL'>('CARD');
+  const [showFlightBaggageModal, setShowFlightBaggageModal] = useState<boolean>(false);
+  const [flightBaggageAdded, setFlightBaggageAdded] = useState<boolean>(false);
+  const [flightBooked, setFlightBooked] = useState<boolean>(false);
+  
+  // New Complex Flight App states
+  const [flightTripType, setFlightTripType] = useState<'IDA_VUELTA' | 'SOLO_IDA' | 'MULTIDESTINO'>('IDA_VUELTA');
+  const [flightPassengers, setFlightPassengers] = useState<number>(1);
+  const [flightClass, setFlightClass] = useState<'TURISTA' | 'BUSINESS' | 'PRIMERA'>('TURISTA');
+  const [showFlightMenu, setShowFlightMenu] = useState<boolean>(false);
+  const [showExtraOptions, setShowExtraOptions] = useState<boolean>(false);
+
   // Independent rotation state tracking
   const [currentVerIndex, setCurrentVerIndex] = useState<number>(0);
   const [currentObjIndex, setCurrentObjIndex] = useState<number>(0);
@@ -70,6 +89,7 @@ export default function App() {
     if (lv === 2) return 3; // 3 clock visual styles
     if (lv === 3) return 2; // 2 delivery themes
     if (lv === 4) return 2; // 2 Banking palettes
+    if (lv === 5) return 3; // 3 Flight app themes (Minimal, Glass, Brutal)
     return 2;
   };
 
@@ -78,6 +98,7 @@ export default function App() {
     if (lv === 2) return 4; // 4 clock objectives
     if (lv === 3) return 12; // 12 target food items
     if (lv === 4) return 5; // 5 Banking objectives: 2 transfers + block card + Bizum + check PIN
+    if (lv === 5) return 3; // 3 Flight app objectives
     return 2;
   };
 
@@ -202,6 +223,20 @@ export default function App() {
     setStopwatchRunning(false);
     setTimerTime(300);
     setStopwatchTime(0);
+
+    // Reset Flight App States
+    setFlightTab('SEARCH');
+    setFlightOrigin('Madrid (MAD)');
+    setFlightDest('');
+    setFlightDate('2026-06-15');
+    setShowFlightBaggageModal(false);
+    setFlightBaggageAdded(false);
+    setFlightBooked(false);
+    setFlightTripType('IDA_VUELTA');
+    setFlightPassengers(1);
+    setFlightClass('TURISTA');
+    setShowFlightMenu(false);
+    setShowExtraOptions(false);
     
     try {
       commitNextIndices(selectedLevel, verIdx, objIdx);
@@ -327,6 +362,21 @@ export default function App() {
     setDeliveryCustomizations({});
     setDeliverySearchQuery('');
     setSelectedDeliveryCategory('');
+
+    setFlightTab('SEARCH');
+    setFlightOrigin('Madrid (MAD)');
+    setFlightDest('');
+    setFlightDate('2026-06-15');
+    setShowFlightBaggageModal(false);
+    setFlightBaggageAdded(false);
+    setFlightBooked(false);
+    setFlightTripType('IDA_VUELTA');
+    setFlightPassengers(1);
+    setFlightClass('TURISTA');
+    setShowFlightMenu(false);
+    setShowExtraOptions(false);
+    setFlightSearchStep('FORM');
+
     // Auto-fetch with the current level so the objective text appears immediately
     const nextIdxs = peekNextIndices(level);
     setPendingVerIndex(nextIdxs.ver);
@@ -379,6 +429,20 @@ export default function App() {
         setStopwatchRunning(false);
         setTimerTime(300);
         setStopwatchTime(0);
+
+        setFlightTab('SEARCH');
+        setFlightOrigin('Madrid (MAD)');
+        setFlightDest('');
+        setFlightDate('2026-06-15');
+        setShowFlightBaggageModal(false);
+        setFlightBaggageAdded(false);
+        setFlightBooked(false);
+        setFlightTripType('IDA_VUELTA');
+        setFlightPassengers(1);
+        setFlightClass('TURISTA');
+        setShowFlightMenu(false);
+        setShowExtraOptions(false);
+        setFlightSearchStep('FORM');
 
         setAppState('PLAYING');
       }
@@ -1793,6 +1857,1076 @@ export default function App() {
     );
   };
 
+  const renderFlightApp = () => {
+    if (!screen) return null;
+    const headerComp = screen.components.find(c => c.type === 'HEADER_MISSION');
+    const version = headerComp?.props?.version || 0; // 0: Minimal, 1: Glass, 2: Brutal
+
+    const handleFlightObjectiveCheck = () => {
+      const isBookingObj = screen.missionText.includes('Reserva un vuelo');
+      const isBaggageObj = screen.missionText.includes('Añade una maleta');
+      const isBoardingObj = screen.missionText.includes('Abre tu tarjeta');
+      const isTokyoObj = screen.missionText.includes('Tokyo');
+
+      if (isBookingObj && flightBooked) setSuccess(true);
+      if (isTokyoObj && flightBooked && flightTripType === 'SOLO_IDA' && flightDest.toLowerCase().includes('tokyo')) setSuccess(true);
+      if (isBaggageObj && flightBaggageAdded) setSuccess(true);
+      if (isBoardingObj && flightTab === 'BOARDING') setSuccess(true);
+    };
+
+    // Helper common triggers
+    const triggerSearch = () => {
+      if (flightDest.toLowerCase().includes('paris') || flightDest.toLowerCase().includes('parís')) {
+        setFlightBooked(true);
+        setTimeout(() => handleFlightObjectiveCheck(), 100);
+      }
+    };
+    const addBaggage = () => {
+      setFlightBaggageAdded(true); 
+      setShowFlightBaggageModal(false); 
+      setShowExtraOptions(false);
+      setTimeout(() => handleFlightObjectiveCheck(), 100);
+    };
+
+    // Minimal Theme: Bottom Navigation
+    if (version === 0) {
+      return (
+        <div className="flight-app minimal-theme" style={{ position: 'relative', display: 'flex', flexDirection: 'column', height: '100%', maxHeight: '100%', overflow: 'hidden', background: 'var(--theme-primary-bg)' }}>
+          <div style={{ padding: '1.5rem', flex: 1, overflowY: 'auto', paddingBottom: '90px' }}>
+            <h2 style={{ fontSize: '1.5rem', fontWeight: 600, color: 'var(--theme-text-main)', marginBottom: '1.5rem' }}>Búmer Airlines</h2>
+            {flightTab === 'SEARCH' && flightSearchStep === 'FORM' && (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+                <div style={{ display: 'flex', background: 'var(--theme-surface-bg)', borderRadius: '12px', padding: '0.25rem' }}>
+                  <button onClick={() => setFlightTripType('IDA_VUELTA')} style={{ flex: 1, padding: '0.75rem', borderRadius: '10px', background: flightTripType === 'IDA_VUELTA' ? 'var(--theme-primary-bg)' : 'transparent', color: flightTripType === 'IDA_VUELTA' ? 'var(--theme-text-main)' : '#9CA3AF', border: 'none', fontWeight: 600, transition: 'all 0.2s', boxShadow: flightTripType === 'IDA_VUELTA' ? '0 2px 4px rgba(0,0,0,0.05)' : 'none', cursor: 'pointer' }}>Ida y vuelta</button>
+                  <button onClick={() => setFlightTripType('SOLO_IDA')} style={{ flex: 1, padding: '0.75rem', borderRadius: '10px', background: flightTripType === 'SOLO_IDA' ? 'var(--theme-primary-bg)' : 'transparent', color: flightTripType === 'SOLO_IDA' ? 'var(--theme-text-main)' : '#9CA3AF', border: 'none', fontWeight: 600, transition: 'all 0.2s', boxShadow: flightTripType === 'SOLO_IDA' ? '0 2px 4px rgba(0,0,0,0.05)' : 'none', cursor: 'pointer' }}>Solo ida</button>
+                </div>
+                <div style={{ padding: '1rem', background: 'var(--theme-surface-bg)', borderRadius: '12px' }}>
+                  <label style={{ fontSize: '0.8rem', color: '#6B7280' }}>Origen</label>
+                  <input type="text" value={flightOrigin} readOnly style={{ width: '100%', border: 'none', background: 'transparent', fontSize: '1.1rem', marginTop: '0.2rem', outline: 'none', color: 'var(--theme-text-main)' }} />
+                </div>
+                <div style={{ padding: '1rem', background: 'var(--theme-surface-bg)', borderRadius: '12px' }}>
+                  <label style={{ fontSize: '0.8rem', color: '#6B7280' }}>Destino</label>
+                  <input type="text" value={flightDest} onChange={(e) => setFlightDest(e.target.value)} placeholder="¿A dónde viajas?" style={{ width: '100%', border: 'none', background: 'transparent', fontSize: '1.1rem', marginTop: '0.2rem', outline: 'none', color: 'var(--theme-text-main)' }} />
+                </div>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+                  <div style={{ flex: 1, padding: '1rem', background: 'var(--theme-surface-bg)', borderRadius: '12px', cursor: 'pointer', display: 'flex', flexDirection: 'column', justifyContent: 'center', minWidth: 0 }} onClick={(e) => { const i = e.currentTarget.querySelector('input'); if(i && i.showPicker) { try { i.showPicker() } catch(err){} } }}>
+                    <label style={{ fontSize: '0.8rem', color: '#6B7280', cursor: 'pointer' }}>Fecha Ida</label>
+                    <input type="date" value={flightDate} onChange={(e) => setFlightDate(e.target.value)} onClick={(e) => { e.stopPropagation(); try { if ((e.target as any).showPicker) (e.target as any).showPicker(); } catch(err){} }} style={{ width: '100%', minWidth: 0, border: 'none', background: 'transparent', fontSize: '1rem', marginTop: '0.2rem', outline: 'none', color: 'var(--theme-text-main)', cursor: 'pointer', padding: 0 }} />
+                  </div>
+                  {flightTripType === 'IDA_VUELTA' && (
+                    <div style={{ flex: 1, padding: '1rem', background: 'var(--theme-surface-bg)', borderRadius: '12px', cursor: 'pointer', display: 'flex', flexDirection: 'column', justifyContent: 'center', minWidth: 0 }} onClick={(e) => { const i = e.currentTarget.querySelector('input'); if(i && i.showPicker) { try { i.showPicker() } catch(err){} } }}>
+                      <label style={{ fontSize: '0.8rem', color: '#6B7280', cursor: 'pointer' }}>Fecha Vuelta</label>
+                      <input type="date" value={flightReturnDate} onChange={(e) => setFlightReturnDate(e.target.value)} onClick={(e) => { e.stopPropagation(); try { if ((e.target as any).showPicker) (e.target as any).showPicker(); } catch(err){} }} style={{ width: '100%', minWidth: 0, border: 'none', background: 'transparent', fontSize: '1rem', marginTop: '0.2rem', outline: 'none', color: 'var(--theme-text-main)', cursor: 'pointer', padding: 0 }} />
+                    </div>
+                  )}
+                </div>
+                <div style={{ display: 'flex', gap: '1rem' }}>
+                  <div style={{ flex: 1, padding: '1rem', background: 'var(--theme-surface-bg)', borderRadius: '12px', display: 'flex', flexDirection: 'column', justifyContent: 'center', minWidth: 0 }}>
+                    <label style={{ fontSize: '0.8rem', color: '#6B7280' }}>Pasajeros</label>
+                    <select value={flightPassengers} onChange={e => setFlightPassengers(Number(e.target.value))} style={{ width: '100%', minWidth: 0, border: 'none', background: 'transparent', fontSize: '1rem', marginTop: '0.2rem', color: 'var(--theme-text-main)', padding: 0 }}>
+                      {[1,2,3,4,5].map(n => <option key={n} value={n}>{n} Pasajeros</option>)}
+                    </select>
+                  </div>
+                  <div style={{ flex: 1, padding: '1rem', background: 'var(--theme-surface-bg)', borderRadius: '12px', display: 'flex', flexDirection: 'column', justifyContent: 'center', minWidth: 0 }}>
+                    <label style={{ fontSize: '0.8rem', color: '#6B7280' }}>Clase</label>
+                    <select value={flightClass} onChange={e => setFlightClass(e.target.value as any)} style={{ width: '100%', minWidth: 0, border: 'none', background: 'transparent', fontSize: '1rem', marginTop: '0.2rem', color: 'var(--theme-text-main)', padding: 0 }}>
+                      <option value="TURISTA">Turista</option>
+                      <option value="BUSINESS">Business</option>
+                    </select>
+                  </div>
+                </div>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '1rem', background: flightBaggageAdded ? 'var(--theme-primary-bg)' : 'transparent', border: flightBaggageAdded ? '2px solid var(--theme-accent)' : '1px solid #E5E7EB', borderRadius: '12px', transition: 'all 0.2s' }}>
+                  <div style={{ display: 'flex', flexDirection: 'column' }}>
+                    <span style={{ fontSize: '0.9rem', color: 'var(--theme-text-main)', fontWeight: 600 }}>Equipaje de bodega (20kg)</span>
+                    <span style={{ fontSize: '0.8rem', color: flightBaggageAdded ? 'var(--theme-accent)' : '#6B7280' }}>{flightBaggageAdded ? 'Añadido (+35€)' : 'Opcional (+35€)'}</span>
+                  </div>
+                  <label className="toggle-switch" style={{ position: 'relative', display: 'inline-block', width: '44px', height: '24px' }}>
+                    <input type="checkbox" checked={flightBaggageAdded} onChange={(e) => { if (e.target.checked) addBaggage(); else setFlightBaggageAdded(false); }} style={{ opacity: 0, width: 0, height: 0 }} />
+                    <span style={{ position: 'absolute', cursor: 'pointer', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: flightBaggageAdded ? 'var(--theme-accent)' : '#D1D5DB', transition: '.4s', borderRadius: '24px' }}>
+                      <span style={{ position: 'absolute', content: '""', height: '18px', width: '18px', left: flightBaggageAdded ? '23px' : '3px', bottom: '3px', backgroundColor: 'white', transition: '.4s', borderRadius: '50%', boxShadow: '0 2px 4px rgba(0,0,0,0.2)' }}></span>
+                    </span>
+                  </label>
+                </div>
+
+                <button onClick={() => setFlightSearchStep('RESULTS')} style={{ padding: '1rem', background: 'var(--theme-accent)', color: '#FFF', border: 'none', borderRadius: '12px', fontSize: '1.1rem', fontWeight: 600, marginTop: '1rem', cursor: 'pointer' }}>Buscar Vuelos</button>
+              </div>
+            )}
+
+            {flightTab === 'SEARCH' && flightSearchStep === 'RESULTS' && (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+                <button onClick={() => setFlightSearchStep('FORM')} style={{ background: 'none', border: 'none', color: 'var(--theme-accent)', display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer', padding: '0', fontSize: '1rem', fontWeight: 600 }}>
+                  <i className="fas fa-arrow-left"></i> Volver a buscar
+                </button>
+                <div style={{ background: 'var(--theme-surface-bg)', padding: '1rem', borderRadius: '12px', boxShadow: '0 2px 4px rgba(0,0,0,0.05)' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <div style={{ fontSize: '1.2rem', fontWeight: 700 }}>{flightOrigin.split(' ')[0]} <i className="fas fa-plane" style={{ margin: '0 0.5rem', color: '#9CA3AF', fontSize: '1rem' }}></i> {flightDest || 'París'}</div>
+                  </div>
+                  <div style={{ fontSize: '0.85rem', color: '#6B7280', marginTop: '0.5rem' }}>
+                    {flightDate} {flightTripType === 'IDA_VUELTA' ? ` - ${flightReturnDate}` : ''} • {flightPassengers} Pasajero(s) • {flightClass}
+                  </div>
+                </div>
+                
+                <h3 style={{ fontSize: '1.1rem', margin: '1rem 0 0.5rem 0' }}>Vuelos de ida</h3>
+                
+                {[
+                  { id: 1, start: '06:15', end: '09:00', dur: '2h 45m', stops: 'Directo', price: flightClass === 'BUSINESS' ? 320 : 85 },
+                  { id: 2, start: '08:30', end: '11:15', dur: '2h 45m', stops: 'Directo', price: flightClass === 'BUSINESS' ? 350 : 120 },
+                  { id: 3, start: '10:00', end: '13:30', dur: '3h 30m', stops: '1 Escala', price: flightClass === 'BUSINESS' ? 290 : 75 },
+                  { id: 4, start: '14:00', end: '16:45', dur: '2h 45m', stops: 'Directo', price: flightClass === 'BUSINESS' ? 380 : 160 },
+                  { id: 5, start: '18:20', end: '21:05', dur: '2h 45m', stops: 'Directo', price: flightClass === 'BUSINESS' ? 340 : 110 },
+                  { id: 6, start: '21:45', end: '00:30', dur: '2h 45m', stops: 'Directo', price: flightClass === 'BUSINESS' ? 280 : 65 },
+                ].map(f => (
+                  <div key={f.id} style={{ background: 'var(--theme-surface-bg)', padding: '1rem', borderRadius: '12px', display: 'flex', flexDirection: 'column', gap: '1rem', boxShadow: '0 2px 4px rgba(0,0,0,0.05)' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                      <div style={{ display: 'flex', gap: '1.5rem', alignItems: 'center' }}>
+                        <div style={{ display: 'flex', flexDirection: 'column' }}>
+                          <div style={{ fontWeight: 700, fontSize: '1.1rem' }}>{f.start}</div>
+                          <div style={{ fontSize: '0.8rem', color: '#6B7280' }}>{flightOrigin.substring(0, 3).toUpperCase()}</div>
+                        </div>
+                        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', width: '60px' }}>
+                          <span style={{ fontSize: '0.7rem', color: '#9CA3AF' }}>{f.dur}</span>
+                          <div style={{ height: '2px', width: '100%', background: '#E5E7EB', position: 'relative', margin: '4px 0' }}><i className="fas fa-plane" style={{ position: 'absolute', right: '-5px', top: '-6px', color: '#9CA3AF', fontSize: '0.8rem' }}></i></div>
+                          <span style={{ fontSize: '0.7rem', color: f.stops === 'Directo' ? '#10B981' : '#F59E0B' }}>{f.stops}</span>
+                        </div>
+                        <div style={{ display: 'flex', flexDirection: 'column' }}>
+                          <div style={{ fontWeight: 700, fontSize: '1.1rem' }}>{f.end}</div>
+                          <div style={{ fontSize: '0.8rem', color: '#6B7280' }}>{(flightDest || 'PAR').substring(0, 3).toUpperCase()}</div>
+                        </div>
+                      </div>
+                      <div style={{ fontSize: '1.2rem', fontWeight: 800, color: 'var(--theme-text-main)' }}>{f.price + (flightBaggageAdded ? 35 : 0)}€</div>
+                    </div>
+                    <button onClick={() => setFlightSearchStep('CHECKOUT')} style={{ background: 'var(--theme-accent)', color: '#FFF', border: 'none', padding: '0.75rem', borderRadius: '8px', fontWeight: 600, cursor: 'pointer' }}>Seleccionar</button>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {flightTab === 'SEARCH' && flightSearchStep === 'CHECKOUT' && (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+                <button onClick={() => setFlightSearchStep('RESULTS')} style={{ background: 'none', border: 'none', color: 'var(--theme-accent)', display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer', padding: '0', fontSize: '1rem', fontWeight: 600 }}>
+                  <i className="fas fa-arrow-left"></i> Cambiar vuelo
+                </button>
+                <div style={{ background: 'var(--theme-surface-bg)', padding: '1.5rem', borderRadius: '12px', boxShadow: '0 2px 8px rgba(0,0,0,0.05)' }}>
+                  <h3 style={{ margin: '0 0 1rem 0', fontSize: '1.2rem' }}>Resumen del pago</h3>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.5rem' }}>
+                    <span style={{ color: '#6B7280' }}>Vuelo base</span>
+                    <span>120€</span>
+                  </div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.5rem' }}>
+                    <span style={{ color: '#6B7280' }}>Tasas e impuestos</span>
+                    <span>15€</span>
+                  </div>
+                  {flightBaggageAdded && (
+                    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.5rem' }}>
+                      <span style={{ color: '#6B7280' }}>Equipaje (20kg)</span>
+                      <span>35€</span>
+                    </div>
+                  )}
+                  <div style={{ height: '1px', background: '#E5E7EB', margin: '1rem 0' }}></div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', fontWeight: 800, fontSize: '1.2rem' }}>
+                    <span>Total a pagar</span>
+                    <span>{135 + (flightBaggageAdded ? 35 : 0)}€</span>
+                  </div>
+                </div>
+
+                <div style={{ background: 'var(--theme-surface-bg)', padding: '1.5rem', borderRadius: '12px', boxShadow: '0 2px 8px rgba(0,0,0,0.05)' }}>
+                  <h3 style={{ margin: '0 0 1rem 0', fontSize: '1.1rem' }}>Método de pago</h3>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+                    <div onClick={() => setFlightPaymentMethod('CARD')} style={{ display: 'flex', alignItems: 'center', gap: '1rem', padding: '1rem', border: flightPaymentMethod === 'CARD' ? '2px solid var(--theme-accent)' : '1px solid #E5E7EB', borderRadius: '8px', background: flightPaymentMethod === 'CARD' ? 'var(--theme-primary-bg)' : 'transparent', cursor: 'pointer' }}>
+                      <i className="fas fa-credit-card" style={{ fontSize: '1.5rem', color: flightPaymentMethod === 'CARD' ? 'var(--theme-accent)' : '#9CA3AF' }}></i>
+                      <div>
+                        <div style={{ fontWeight: 600 }}>Tarjeta de Crédito/Débito</div>
+                        <div style={{ fontSize: '0.8rem', color: '#6B7280' }}>Visa, Mastercard, Amex</div>
+                      </div>
+                    </div>
+                    <div onClick={() => setFlightPaymentMethod('PAYPAL')} style={{ display: 'flex', alignItems: 'center', gap: '1rem', padding: '1rem', border: flightPaymentMethod === 'PAYPAL' ? '2px solid var(--theme-accent)' : '1px solid #E5E7EB', borderRadius: '8px', background: flightPaymentMethod === 'PAYPAL' ? 'var(--theme-primary-bg)' : 'transparent', cursor: 'pointer' }}>
+                      <i className="fab fa-paypal" style={{ fontSize: '1.5rem', color: flightPaymentMethod === 'PAYPAL' ? '#003087' : '#9CA3AF' }}></i>
+                      <div>
+                        <div style={{ fontWeight: 600 }}>PayPal</div>
+                        <div style={{ fontSize: '0.8rem', color: '#6B7280' }}>Paga de forma segura</div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <button onClick={() => { setFlightBooked(true); setTimeout(() => handleFlightObjectiveCheck(), 100); }} style={{ padding: '1.2rem', background: 'var(--theme-accent)', color: '#FFF', border: 'none', borderRadius: '12px', fontSize: '1.2rem', fontWeight: 700, cursor: 'pointer', display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '0.5rem' }}>
+                  <i className="fas fa-lock"></i> Pagar de forma segura
+                </button>
+              </div>
+            )}
+
+            {flightTab === 'PROFILE' && (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+                <div style={{ background: 'linear-gradient(135deg, #111827 0%, #374151 100%)', borderRadius: '16px', padding: '1.5rem', color: '#FFF', position: 'relative', overflow: 'hidden', boxShadow: '0 10px 15px -3px rgba(0,0,0,0.1)' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                    <div>
+                      <div style={{ fontSize: '0.9rem', color: '#9CA3AF', textTransform: 'uppercase', letterSpacing: '1px' }}>Búmer Silver</div>
+                      <div style={{ fontSize: '1.5rem', fontWeight: 800, marginTop: '0.2rem' }}>Usuario Demo</div>
+                    </div>
+                    <i className="fas fa-crown" style={{ color: '#FCD34D', fontSize: '2rem', opacity: 0.8 }}></i>
+                  </div>
+                  <div style={{ marginTop: '2rem', display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between' }}>
+                    <div>
+                      <div style={{ fontSize: '2rem', fontWeight: 900, lineHeight: 1 }}>12,450</div>
+                      <div style={{ fontSize: '0.8rem', color: '#9CA3AF' }}>Millas disponibles</div>
+                    </div>
+                    <div style={{ fontSize: '0.8rem', color: '#D1D5DB' }}>ID: 884-291-B</div>
+                  </div>
+                </div>
+
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                  {[
+                    { icon: 'fa-id-card', title: 'Información y documentos', desc: 'Pasaporte, visados' },
+                    { icon: 'fa-sliders', title: 'Preferencias de viaje', desc: 'Asientos, comida, aeropuerto' },
+                    { icon: 'fa-credit-card', title: 'Métodos de pago', desc: 'Tarjetas guardadas' },
+                    { icon: 'fa-shield-halved', title: 'Seguridad y Privacidad', desc: 'FaceID, contraseñas' },
+                    { icon: 'fa-headset', title: 'Centro de ayuda', desc: 'Contacto y preguntas frecuentes' }
+                  ].map((item, idx) => (
+                    <div key={idx} style={{ display: 'flex', alignItems: 'center', gap: '1rem', padding: '1.2rem', background: 'var(--theme-surface-bg)', borderRadius: '12px', cursor: 'pointer' }}>
+                      <div style={{ width: '40px', height: '40px', borderRadius: '50%', background: 'var(--theme-primary-bg)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--theme-accent)' }}>
+                        <i className={`fas ${item.icon}`}></i>
+                      </div>
+                      <div style={{ flex: 1 }}>
+                        <div style={{ fontWeight: 600, color: 'var(--theme-text-main)' }}>{item.title}</div>
+                        <div style={{ fontSize: '0.8rem', color: '#6B7280' }}>{item.desc}</div>
+                      </div>
+                      <i className="fas fa-chevron-right" style={{ color: '#D1D5DB' }}></i>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {flightTab === 'BOARDING' && (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+                <h3 style={{ margin: '0 0 0.5rem 0', fontSize: '1.5rem', fontWeight: 700 }}>Mis Viajes</h3>
+                
+                <div style={{ background: 'var(--theme-surface-bg)', borderRadius: '16px', padding: '1.5rem', boxShadow: '0 4px 12px rgba(0,0,0,0.08)', position: 'relative', overflow: 'hidden' }}>
+                  
+                  <div style={{ display: 'inline-block', background: 'var(--theme-accent)', color: '#FFF', fontSize: '0.7rem', fontWeight: 800, padding: '0.3rem 0.6rem', borderRadius: '4px', textTransform: 'uppercase', letterSpacing: '1px', marginBottom: '1.5rem' }}>Próximo Vuelo</div>
+
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem' }}>
+                    <div style={{ display: 'flex', flexDirection: 'column' }}>
+                      <div style={{ fontSize: '2.5rem', fontWeight: 900, lineHeight: 1 }}>{flightOrigin.substring(0, 3).toUpperCase()}</div>
+                      <div style={{ fontSize: '0.8rem', color: '#6B7280', marginTop: '4px' }}>Madrid</div>
+                    </div>
+                    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', flex: 1, padding: '0 1rem' }}>
+                      <i className="fas fa-plane" style={{ fontSize: '1.5rem', color: 'var(--theme-accent)', marginBottom: '8px' }}></i>
+                      <div style={{ width: '100%', borderBottom: '2px dashed #E5E7EB' }}></div>
+                      <span style={{ fontSize: '0.7rem', color: '#9CA3AF', marginTop: '8px' }}>Directo</span>
+                    </div>
+                    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end' }}>
+                      <div style={{ fontSize: '2.5rem', fontWeight: 900, lineHeight: 1 }}>{(flightDest || 'PAR').substring(0, 3).toUpperCase()}</div>
+                      <div style={{ fontSize: '0.8rem', color: '#6B7280', marginTop: '4px' }}>{flightDest ? flightDest.split(',')[0] : 'París'}</div>
+                    </div>
+                  </div>
+
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', background: 'var(--theme-primary-bg)', padding: '1rem', borderRadius: '12px', marginBottom: '2rem' }}>
+                    <div>
+                      <div style={{ fontSize: '0.7rem', color: '#9CA3AF', textTransform: 'uppercase' }}>Pasajero</div>
+                      <div style={{ fontWeight: 700, color: 'var(--theme-text-main)' }}>Usuario Demo</div>
+                    </div>
+                    <div>
+                      <div style={{ fontSize: '0.7rem', color: '#9CA3AF', textTransform: 'uppercase' }}>Fecha</div>
+                      <div style={{ fontWeight: 700, color: 'var(--theme-text-main)' }}>{flightDate}</div>
+                    </div>
+                    <div>
+                      <div style={{ fontSize: '0.7rem', color: '#9CA3AF', textTransform: 'uppercase' }}>Vuelo</div>
+                      <div style={{ fontWeight: 700, color: 'var(--theme-text-main)' }}>BA-409</div>
+                    </div>
+                    <div>
+                      <div style={{ fontSize: '0.7rem', color: '#9CA3AF', textTransform: 'uppercase' }}>Clase</div>
+                      <div style={{ fontWeight: 700, color: 'var(--theme-text-main)' }}>{flightClass}</div>
+                    </div>
+                    <div>
+                      <div style={{ fontSize: '0.7rem', color: '#9CA3AF', textTransform: 'uppercase' }}>Puerta</div>
+                      <div style={{ fontWeight: 700, color: 'var(--theme-text-main)' }}>C42</div>
+                    </div>
+                    <div>
+                      <div style={{ fontSize: '0.7rem', color: '#9CA3AF', textTransform: 'uppercase' }}>Asiento</div>
+                      <div style={{ fontWeight: 700, color: 'var(--theme-text-main)' }}>12A</div>
+                    </div>
+                  </div>
+
+                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem', marginBottom: '2rem' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', padding: '0.5rem 0.8rem', background: 'var(--theme-primary-bg)', borderRadius: '20px', fontSize: '0.8rem', fontWeight: 600, color: 'var(--theme-text-main)' }}>
+                      <i className="fas fa-briefcase"></i> 1x Mano (10kg)
+                    </div>
+                    {flightBaggageAdded && (
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', padding: '0.5rem 0.8rem', background: 'var(--theme-primary-bg)', borderRadius: '20px', fontSize: '0.8rem', fontWeight: 600, color: 'var(--theme-text-main)' }}>
+                        <i className="fas fa-suitcase-rolling"></i> 1x Bodega (20kg)
+                      </div>
+                    )}
+                  </div>
+
+                  <div style={{ background: '#FFF', padding: '1.5rem 1rem', borderRadius: '8px', display: 'flex', flexDirection: 'column', alignItems: 'center', border: '1px solid #E5E7EB' }}>
+                    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
+                      <i className="fas fa-qrcode" style={{ fontSize: '6rem', color: '#000' }}></i>
+                      <span style={{ fontSize: '0.6rem', color: '#9CA3AF', marginTop: '0.5rem', letterSpacing: '2px' }}>BA409-USER-12A</span>
+                    </div>
+                  </div>
+                  
+                  {setTimeout(() => handleFlightObjectiveCheck(), 100) as unknown as null}
+                </div>
+              </div>
+            )}
+            
+            {flightTab === 'EXPLORE' && (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+                <h3 style={{ margin: '0', fontSize: '1.5rem', fontWeight: 700 }}>Explorar</h3>
+                
+                <div style={{ position: 'relative', borderRadius: '16px', overflow: 'hidden', height: '200px' }}>
+                  <img src="https://images.unsplash.com/photo-1503899036084-c55cdd92da26?q=80&w=800&auto=format&fit=crop" style={{ width: '100%', height: '100%', objectFit: 'cover' }} alt="Destinos" />
+                  <div style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, background: 'linear-gradient(to top, rgba(0,0,0,0.8), transparent)', display: 'flex', flexDirection: 'column', justifyContent: 'flex-end', padding: '1.5rem' }}>
+                    <div style={{ color: '#FFF', fontSize: '0.8rem', fontWeight: 600, letterSpacing: '1px', textTransform: 'uppercase', marginBottom: '0.2rem' }}>Destino Destacado</div>
+                    <div style={{ color: '#FFF', fontSize: '1.8rem', fontWeight: 800 }}>Tokio, Japón</div>
+                  </div>
+                </div>
+
+                <div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginBottom: '1rem' }}>
+                    <h4 style={{ margin: 0, fontSize: '1.2rem', fontWeight: 700 }}>Ofertas última hora 🔥</h4>
+                    <span style={{ fontSize: '0.8rem', color: 'var(--theme-accent)', fontWeight: 600, cursor: 'pointer' }}>Ver todo</span>
+                  </div>
+                  
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+                    {[
+                      { dest: 'Londres (LHR)', oldPrice: 195, newPrice: 150, discount: '-23%', date: 'Mañana', img: 'https://images.unsplash.com/photo-1533929736458-ca588d08c8be?q=80&w=400&auto=format&fit=crop' },
+                      { dest: 'Roma (FCO)', oldPrice: 220, newPrice: 165, discount: '-25%', date: 'Este finde', img: 'https://images.unsplash.com/photo-1552832230-c0197dd311b5?q=80&w=400&auto=format&fit=crop' },
+                      { dest: 'Berlín (BER)', oldPrice: 150, newPrice: 90, discount: '-40%', date: 'Próx martes', img: 'https://images.unsplash.com/photo-1560969184-10fe8719e047?q=80&w=400&auto=format&fit=crop' },
+                      { dest: 'Nueva York (JFK)', oldPrice: 650, newPrice: 420, discount: '-35%', date: 'Próxima semana', img: 'https://images.unsplash.com/photo-1496442226666-8d4d0e62e6e9?q=80&w=400&auto=format&fit=crop' },
+                      { dest: 'Dubái (DXB)', oldPrice: 580, newPrice: 480, discount: '-17%', date: 'En 3 días', img: 'https://images.unsplash.com/photo-1512453979798-5ea266f8880c?q=80&w=400&auto=format&fit=crop' },
+                      { dest: 'Bali (DPS)', oldPrice: 850, newPrice: 620, discount: '-27%', date: 'Sábado', img: 'https://images.unsplash.com/photo-1537996194471-e657df975ab4?q=80&w=400&auto=format&fit=crop' }
+                    ].map((offer, i) => (
+                      <div key={i} style={{ display: 'flex', background: 'var(--theme-surface-bg)', borderRadius: '12px', overflow: 'hidden', boxShadow: '0 2px 8px rgba(0,0,0,0.05)', cursor: 'pointer' }} onClick={() => { setFlightDest(offer.dest); setFlightTab('SEARCH'); setFlightSearchStep('FORM'); }}>
+                        <div style={{ width: '100px', height: '100px' }}>
+                          <img src={offer.img} style={{ width: '100%', height: '100%', objectFit: 'cover' }} alt={offer.dest} />
+                        </div>
+                        <div style={{ padding: '0.8rem', flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
+                          <div>
+                            <div style={{ fontWeight: 700, fontSize: '1.1rem' }}>{offer.dest}</div>
+                            <div style={{ fontSize: '0.8rem', color: '#6B7280', display: 'flex', alignItems: 'center', gap: '0.3rem', marginTop: '0.2rem' }}>
+                              <i className="far fa-calendar-alt"></i> {offer.date}
+                            </div>
+                          </div>
+                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end' }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                              <span style={{ fontSize: '0.8rem', color: '#9CA3AF', textDecoration: 'line-through' }}>{offer.oldPrice}€</span>
+                              <span style={{ fontSize: '1.2rem', fontWeight: 800, color: 'var(--theme-text-main)' }}>{offer.newPrice}€</span>
+                            </div>
+                            <div style={{ background: '#FEE2E2', color: '#EF4444', fontSize: '0.7rem', fontWeight: 800, padding: '0.2rem 0.5rem', borderRadius: '4px' }}>
+                              {offer.discount}
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            )}
+            
+            {flightTab !== 'SEARCH' && flightTab !== 'BOARDING' && flightTab !== 'PROFILE' && flightTab !== 'EXPLORE' && (
+               <div style={{ padding: '2rem', textAlign: 'center', color: '#9CA3AF' }}>Sección en construcción</div>
+            )}
+          </div>
+          <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, display: 'flex', justifyContent: 'space-around', padding: '1rem', background: 'var(--theme-surface-bg)', borderTop: '1px solid #E5E7EB', zIndex: 100 }}>
+            <button onClick={() => setFlightTab('SEARCH')} style={{ background: 'none', border: 'none', color: flightTab === 'SEARCH' ? 'var(--theme-accent)' : '#9CA3AF' }}><i className="fas fa-search"></i><div style={{ fontSize: '0.6rem', marginTop: '4px' }}>Buscar</div></button>
+            <button onClick={() => setFlightTab('EXPLORE')} style={{ background: 'none', border: 'none', color: flightTab === 'EXPLORE' ? 'var(--theme-accent)' : '#9CA3AF' }}><i className="fas fa-compass"></i><div style={{ fontSize: '0.6rem', marginTop: '4px' }}>Explorar</div></button>
+            <button onClick={() => setFlightTab('BOARDING')} style={{ background: 'none', border: 'none', color: flightTab === 'BOARDING' ? 'var(--theme-accent)' : '#9CA3AF' }}><i className="fas fa-ticket-simple"></i><div style={{ fontSize: '0.6rem', marginTop: '4px' }}>Viajes</div></button>
+            <button onClick={() => setFlightTab('NOTIFICATIONS')} style={{ background: 'none', border: 'none', color: flightTab === 'NOTIFICATIONS' ? 'var(--theme-accent)' : '#9CA3AF' }}><i className="fas fa-bell"></i><div style={{ fontSize: '0.6rem', marginTop: '4px' }}>Avisos</div></button>
+            <button onClick={() => setFlightTab('PROFILE')} style={{ background: 'none', border: 'none', color: flightTab === 'PROFILE' ? 'var(--theme-accent)' : '#9CA3AF' }}><i className="fas fa-user"></i><div style={{ fontSize: '0.6rem', marginTop: '4px' }}>Perfil</div></button>
+          </div>
+        </div>
+      );
+    }
+
+    // Glassmorphism Theme: Side/Top Navigation mixed, blur effects
+    if (version === 1) {
+      return (
+        <div className="flight-app glass-theme" style={{ position: 'relative', height: '100%', background: 'linear-gradient(135deg, #1E1E2F 0%, #3A2E5D 100%)', color: 'var(--theme-text-main)', overflow: 'hidden' }}>
+          <div style={{ position: 'absolute', top: '-50px', right: '-50px', width: '200px', height: '200px', background: 'rgba(167, 139, 250, 0.4)', borderRadius: '50%', filter: 'blur(50px)' }}></div>
+          <div style={{ position: 'absolute', bottom: '-50px', left: '-50px', width: '250px', height: '250px', background: 'rgba(56, 189, 248, 0.3)', borderRadius: '50%', filter: 'blur(60px)' }}></div>
+          
+          <div style={{ position: 'relative', zIndex: 1, display: 'flex', flexDirection: 'column', height: '100%' }}>
+            <div style={{ padding: '1.5rem', flex: 1, overflowY: 'auto', paddingBottom: '90px' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
+                <h2 style={{ fontSize: '1.5rem', fontWeight: 300, letterSpacing: '2px', margin: 0, color: '#FFF' }}>SKY LINK</h2>
+                <img src="https://ui-avatars.com/api/?name=User&background=random" style={{ width: '32px', borderRadius: '50%' }} alt="User" />
+              </div>
+
+              {flightTab === 'SEARCH' && flightSearchStep === 'FORM' && (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+                  <div style={{ display: 'flex', background: 'rgba(255,255,255,0.05)', backdropFilter: 'blur(10px)', borderRadius: '12px', padding: '0.25rem', border: '1px solid rgba(255,255,255,0.1)' }}>
+                    <button onClick={() => setFlightTripType('IDA_VUELTA')} style={{ flex: 1, padding: '0.75rem', borderRadius: '10px', background: flightTripType === 'IDA_VUELTA' ? 'rgba(255,255,255,0.1)' : 'transparent', color: '#FFF', border: 'none', fontWeight: 600, transition: 'all 0.2s', cursor: 'pointer' }}>Ida y vuelta</button>
+                    <button onClick={() => setFlightTripType('SOLO_IDA')} style={{ flex: 1, padding: '0.75rem', borderRadius: '10px', background: flightTripType === 'SOLO_IDA' ? 'rgba(255,255,255,0.1)' : 'transparent', color: '#FFF', border: 'none', fontWeight: 600, transition: 'all 0.2s', cursor: 'pointer' }}>Solo ida</button>
+                  </div>
+                  
+                  <div style={{ padding: '1rem', background: 'rgba(255,255,255,0.05)', backdropFilter: 'blur(10px)', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.1)' }}>
+                    <label style={{ fontSize: '0.8rem', color: '#9CA3AF' }}>Origen</label>
+                    <input type="text" value={flightOrigin} readOnly style={{ width: '100%', border: 'none', background: 'transparent', fontSize: '1.1rem', marginTop: '0.2rem', outline: 'none', color: '#FFF' }} />
+                  </div>
+                  <div style={{ padding: '1rem', background: 'rgba(255,255,255,0.05)', backdropFilter: 'blur(10px)', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.1)' }}>
+                    <label style={{ fontSize: '0.8rem', color: '#9CA3AF' }}>Destino</label>
+                    <input type="text" value={flightDest} onChange={(e) => setFlightDest(e.target.value)} placeholder="¿A dónde viajas?" style={{ width: '100%', border: 'none', background: 'transparent', fontSize: '1.1rem', marginTop: '0.2rem', outline: 'none', color: '#FFF' }} />
+                  </div>
+                  
+                  <div style={{ display: 'flex', gap: '1rem' }}>
+                    <div style={{ flex: 1, padding: '1rem', background: 'rgba(255,255,255,0.05)', backdropFilter: 'blur(10px)', borderRadius: '12px', cursor: 'pointer', border: '1px solid rgba(255,255,255,0.1)', display: 'flex', flexDirection: 'column', justifyContent: 'center', minWidth: 0 }} onClick={(e) => { const i = e.currentTarget.querySelector('input'); if(i && i.showPicker) { try { i.showPicker() } catch(err){} } }}>
+                      <label style={{ fontSize: '0.8rem', color: '#9CA3AF', cursor: 'pointer' }}>Fecha Ida</label>
+                      <input type="date" value={flightDate} onChange={(e) => setFlightDate(e.target.value)} onClick={(e) => { e.stopPropagation(); try { if ((e.target as any).showPicker) (e.target as any).showPicker(); } catch(err){} }} style={{ width: '100%', border: 'none', background: 'transparent', fontSize: '1rem', marginTop: '0.2rem', outline: 'none', color: '#FFF', cursor: 'pointer', padding: 0 }} />
+                    </div>
+                    {flightTripType === 'IDA_VUELTA' && (
+                      <div style={{ flex: 1, padding: '1rem', background: 'rgba(255,255,255,0.05)', backdropFilter: 'blur(10px)', borderRadius: '12px', cursor: 'pointer', border: '1px solid rgba(255,255,255,0.1)', display: 'flex', flexDirection: 'column', justifyContent: 'center', minWidth: 0 }} onClick={(e) => { const i = e.currentTarget.querySelector('input'); if(i && i.showPicker) { try { i.showPicker() } catch(err){} } }}>
+                        <label style={{ fontSize: '0.8rem', color: '#9CA3AF', cursor: 'pointer' }}>Fecha Vuelta</label>
+                        <input type="date" value={flightReturnDate} onChange={(e) => setFlightReturnDate(e.target.value)} onClick={(e) => { e.stopPropagation(); try { if ((e.target as any).showPicker) (e.target as any).showPicker(); } catch(err){} }} style={{ width: '100%', border: 'none', background: 'transparent', fontSize: '1rem', marginTop: '0.2rem', outline: 'none', color: '#FFF', cursor: 'pointer', padding: 0 }} />
+                      </div>
+                    )}
+                  </div>
+
+                  <div style={{ display: 'flex', gap: '1rem' }}>
+                    <div style={{ flex: 1, padding: '1rem', background: 'rgba(255,255,255,0.05)', backdropFilter: 'blur(10px)', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.1)', display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
+                      <label style={{ fontSize: '0.8rem', color: '#9CA3AF' }}>Pasajeros</label>
+                      <select value={flightPassengers} onChange={e => setFlightPassengers(Number(e.target.value))} style={{ width: '100%', border: 'none', background: 'transparent', fontSize: '1rem', marginTop: '0.2rem', color: '#FFF', padding: 0 }}>
+                        {[1,2,3,4,5].map(n => <option key={n} value={n} style={{ color: '#000' }}>{n} Pasajeros</option>)}
+                      </select>
+                    </div>
+                    <div style={{ flex: 1, padding: '1rem', background: 'rgba(255,255,255,0.05)', backdropFilter: 'blur(10px)', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.1)', display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
+                      <label style={{ fontSize: '0.8rem', color: '#9CA3AF' }}>Clase</label>
+                      <select value={flightClass} onChange={e => setFlightClass(e.target.value as any)} style={{ width: '100%', border: 'none', background: 'transparent', fontSize: '1rem', marginTop: '0.2rem', color: '#FFF', padding: 0 }}>
+                        <option value="TURISTA" style={{ color: '#000' }}>Turista</option>
+                        <option value="BUSINESS" style={{ color: '#000' }}>Business</option>
+                      </select>
+                    </div>
+                  </div>
+
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '1rem', background: flightBaggageAdded ? 'rgba(255,255,255,0.1)' : 'rgba(255,255,255,0.05)', backdropFilter: 'blur(10px)', border: flightBaggageAdded ? '1px solid #FFF' : '1px solid rgba(255,255,255,0.1)', borderRadius: '12px', transition: 'all 0.2s' }}>
+                    <div style={{ display: 'flex', flexDirection: 'column' }}>
+                      <span style={{ fontSize: '0.9rem', color: '#FFF', fontWeight: 600 }}>Equipaje bodega (+35€)</span>
+                      <span style={{ fontSize: '0.8rem', color: flightBaggageAdded ? '#FFF' : '#9CA3AF' }}>{flightBaggageAdded ? 'Añadido' : 'Opcional'}</span>
+                    </div>
+                    <label className="toggle-switch" style={{ position: 'relative', display: 'inline-block', width: '44px', height: '24px' }}>
+                      <input type="checkbox" checked={flightBaggageAdded} onChange={(e) => { if (e.target.checked) addBaggage(); else setFlightBaggageAdded(false); }} style={{ opacity: 0, width: 0, height: 0 }} />
+                      <span style={{ position: 'absolute', cursor: 'pointer', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: flightBaggageAdded ? 'var(--theme-accent)' : 'rgba(255,255,255,0.2)', transition: '.4s', borderRadius: '24px' }}>
+                        <span style={{ position: 'absolute', content: '""', height: '18px', width: '18px', left: flightBaggageAdded ? '23px' : '3px', bottom: '3px', backgroundColor: 'white', transition: '.4s', borderRadius: '50%', boxShadow: '0 2px 4px rgba(0,0,0,0.2)' }}></span>
+                      </span>
+                    </label>
+                  </div>
+
+                  <button onClick={() => setFlightSearchStep('RESULTS')} style={{ padding: '1rem', background: 'var(--theme-accent)', color: '#FFF', border: 'none', borderRadius: '12px', fontSize: '1.1rem', fontWeight: 600, marginTop: '1rem', cursor: 'pointer', boxShadow: '0 4px 15px rgba(167, 139, 250, 0.4)' }}>Buscar Vuelos</button>
+                </div>
+              )}
+
+              {flightTab === 'SEARCH' && flightSearchStep === 'RESULTS' && (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+                  <button onClick={() => setFlightSearchStep('FORM')} style={{ background: 'none', border: 'none', color: '#FFF', display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer', padding: '0', fontSize: '1rem', fontWeight: 600 }}>
+                    <i className="fas fa-arrow-left"></i> Volver a buscar
+                  </button>
+                  <div style={{ background: 'rgba(255,255,255,0.05)', backdropFilter: 'blur(10px)', padding: '1rem', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.1)' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                      <div style={{ fontSize: '1.2rem', fontWeight: 700, color: '#FFF' }}>{flightOrigin.split(' ')[0]} <i className="fas fa-plane" style={{ margin: '0 0.5rem', color: '#9CA3AF', fontSize: '1rem' }}></i> {flightDest || 'París'}</div>
+                    </div>
+                    <div style={{ fontSize: '0.85rem', color: '#9CA3AF', marginTop: '0.5rem' }}>
+                      {flightDate} {flightTripType === 'IDA_VUELTA' ? ` - ${flightReturnDate}` : ''} • {flightPassengers} Pasajeros • {flightClass}
+                    </div>
+                  </div>
+                  
+                  <h3 style={{ fontSize: '1.1rem', margin: '1rem 0 0.5rem 0', fontWeight: 300, letterSpacing: '1px', color: '#FFF' }}>Vuelos de ida</h3>
+                  
+                  {[
+                    { id: 1, start: '06:15', end: '09:00', dur: '2h 45m', stops: 'Directo', price: flightClass === 'BUSINESS' ? 320 : 85 },
+                    { id: 2, start: '08:30', end: '11:15', dur: '2h 45m', stops: 'Directo', price: flightClass === 'BUSINESS' ? 350 : 120 },
+                    { id: 3, start: '10:00', end: '13:30', dur: '3h 30m', stops: '1 Escala', price: flightClass === 'BUSINESS' ? 290 : 75 },
+                    { id: 4, start: '14:00', end: '16:45', dur: '2h 45m', stops: 'Directo', price: flightClass === 'BUSINESS' ? 380 : 160 },
+                    { id: 5, start: '18:20', end: '21:05', dur: '2h 45m', stops: 'Directo', price: flightClass === 'BUSINESS' ? 340 : 110 },
+                    { id: 6, start: '21:45', end: '00:30', dur: '2h 45m', stops: 'Directo', price: flightClass === 'BUSINESS' ? 280 : 65 },
+                  ].map(f => (
+                    <div key={f.id} style={{ background: 'rgba(255,255,255,0.05)', backdropFilter: 'blur(10px)', padding: '1rem', borderRadius: '12px', display: 'flex', flexDirection: 'column', gap: '1rem', border: '1px solid rgba(255,255,255,0.1)' }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                        <div style={{ display: 'flex', gap: '1.5rem', alignItems: 'center' }}>
+                          <div style={{ display: 'flex', flexDirection: 'column' }}>
+                            <div style={{ fontWeight: 700, fontSize: '1.1rem', color: '#FFF' }}>{f.start}</div>
+                            <div style={{ fontSize: '0.8rem', color: '#9CA3AF' }}>{flightOrigin.substring(0, 3).toUpperCase()}</div>
+                          </div>
+                          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', width: '60px' }}>
+                            <span style={{ fontSize: '0.7rem', color: '#9CA3AF' }}>{f.dur}</span>
+                            <div style={{ height: '2px', width: '100%', background: 'rgba(255,255,255,0.2)', position: 'relative', margin: '4px 0' }}><i className="fas fa-plane" style={{ position: 'absolute', right: '-5px', top: '-6px', color: '#9CA3AF', fontSize: '0.8rem' }}></i></div>
+                            <span style={{ fontSize: '0.7rem', color: f.stops === 'Directo' ? '#38BDF8' : '#FBBF24' }}>{f.stops}</span>
+                          </div>
+                          <div style={{ display: 'flex', flexDirection: 'column' }}>
+                            <div style={{ fontWeight: 700, fontSize: '1.1rem', color: '#FFF' }}>{f.end}</div>
+                            <div style={{ fontSize: '0.8rem', color: '#9CA3AF' }}>{(flightDest || 'PAR').substring(0, 3).toUpperCase()}</div>
+                          </div>
+                        </div>
+                        <div style={{ fontSize: '1.2rem', fontWeight: 800, color: '#FFF' }}>{f.price + (flightBaggageAdded ? 35 : 0)}€</div>
+                      </div>
+                      <button onClick={() => setFlightSearchStep('CHECKOUT')} style={{ background: 'var(--theme-accent)', color: '#FFF', border: 'none', padding: '0.75rem', borderRadius: '8px', fontWeight: 600, cursor: 'pointer', boxShadow: '0 4px 10px rgba(167, 139, 250, 0.3)' }}>Seleccionar</button>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              {flightTab === 'SEARCH' && flightSearchStep === 'CHECKOUT' && (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+                  <button onClick={() => setFlightSearchStep('RESULTS')} style={{ background: 'none', border: 'none', color: '#FFF', display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer', padding: '0', fontSize: '1rem', fontWeight: 600 }}>
+                    <i className="fas fa-arrow-left"></i> Cambiar vuelo
+                  </button>
+                  <div style={{ background: 'rgba(255,255,255,0.05)', backdropFilter: 'blur(10px)', padding: '1.5rem', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.1)' }}>
+                    <h3 style={{ margin: '0 0 1rem 0', fontSize: '1.2rem', fontWeight: 300, color: '#FFF' }}>Resumen del pago</h3>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.5rem' }}>
+                      <span style={{ color: '#9CA3AF' }}>Vuelo base</span>
+                      <span style={{ color: '#FFF' }}>120€</span>
+                    </div>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.5rem' }}>
+                      <span style={{ color: '#9CA3AF' }}>Tasas e impuestos</span>
+                      <span style={{ color: '#FFF' }}>15€</span>
+                    </div>
+                    {flightBaggageAdded && (
+                      <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.5rem' }}>
+                        <span style={{ color: '#9CA3AF' }}>Equipaje (20kg)</span>
+                        <span style={{ color: '#FFF' }}>35€</span>
+                      </div>
+                    )}
+                    <div style={{ height: '1px', background: 'rgba(255,255,255,0.2)', margin: '1rem 0' }}></div>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', fontWeight: 800, fontSize: '1.2rem', color: '#FFF' }}>
+                      <span>Total a pagar</span>
+                      <span style={{ color: 'var(--theme-accent)' }}>{135 + (flightBaggageAdded ? 35 : 0)}€</span>
+                    </div>
+                  </div>
+
+                  <div style={{ background: 'rgba(255,255,255,0.05)', backdropFilter: 'blur(10px)', padding: '1.5rem', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.1)' }}>
+                    <h3 style={{ margin: '0 0 1rem 0', fontSize: '1.1rem', fontWeight: 300, color: '#FFF' }}>Método de pago</h3>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+                      <div onClick={() => setFlightPaymentMethod('CARD')} style={{ display: 'flex', alignItems: 'center', gap: '1rem', padding: '1rem', border: flightPaymentMethod === 'CARD' ? '1px solid var(--theme-accent)' : '1px solid rgba(255,255,255,0.1)', borderRadius: '8px', background: flightPaymentMethod === 'CARD' ? 'rgba(255,255,255,0.1)' : 'transparent', cursor: 'pointer' }}>
+                        <i className="fas fa-credit-card" style={{ fontSize: '1.5rem', color: flightPaymentMethod === 'CARD' ? 'var(--theme-accent)' : '#9CA3AF' }}></i>
+                        <div>
+                          <div style={{ fontWeight: 600, color: '#FFF' }}>Tarjeta</div>
+                          <div style={{ fontSize: '0.8rem', color: '#9CA3AF' }}>Visa, Mastercard, Amex</div>
+                        </div>
+                      </div>
+                      <div onClick={() => setFlightPaymentMethod('PAYPAL')} style={{ display: 'flex', alignItems: 'center', gap: '1rem', padding: '1rem', border: flightPaymentMethod === 'PAYPAL' ? '1px solid var(--theme-accent)' : '1px solid rgba(255,255,255,0.1)', borderRadius: '8px', background: flightPaymentMethod === 'PAYPAL' ? 'rgba(255,255,255,0.1)' : 'transparent', cursor: 'pointer' }}>
+                        <i className="fab fa-paypal" style={{ fontSize: '1.5rem', color: flightPaymentMethod === 'PAYPAL' ? '#38BDF8' : '#9CA3AF' }}></i>
+                        <div>
+                          <div style={{ fontWeight: 600, color: '#FFF' }}>PayPal</div>
+                          <div style={{ fontSize: '0.8rem', color: '#9CA3AF' }}>Paga de forma segura</div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  <button onClick={() => { setFlightBooked(true); setTimeout(() => handleFlightObjectiveCheck(), 100); }} style={{ padding: '1.2rem', background: 'var(--theme-accent)', color: '#FFF', border: 'none', borderRadius: '12px', fontSize: '1.2rem', fontWeight: 700, cursor: 'pointer', display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '0.5rem', boxShadow: '0 4px 15px rgba(167, 139, 250, 0.4)' }}>
+                    <i className="fas fa-lock"></i> Pagar ahora
+                  </button>
+                </div>
+              )}
+
+              {flightTab === 'PROFILE' && (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+                  <div style={{ background: 'linear-gradient(135deg, rgba(255,255,255,0.1) 0%, rgba(255,255,255,0.05) 100%)', backdropFilter: 'blur(10px)', borderRadius: '16px', padding: '1.5rem', color: '#FFF', position: 'relative', overflow: 'hidden', border: '1px solid rgba(255,255,255,0.2)' }}>
+                    <div style={{ position: 'absolute', top: '-20px', right: '-20px', width: '100px', height: '100px', background: 'rgba(56, 189, 248, 0.3)', borderRadius: '50%', filter: 'blur(30px)' }}></div>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', position: 'relative', zIndex: 1 }}>
+                      <div>
+                        <div style={{ fontSize: '0.9rem', color: '#D1D5DB', textTransform: 'uppercase', letterSpacing: '1px' }}>Sky Link Diamond</div>
+                        <div style={{ fontSize: '1.5rem', fontWeight: 600, marginTop: '0.2rem' }}>Usuario VIP</div>
+                      </div>
+                      <i className="fas fa-gem" style={{ color: '#38BDF8', fontSize: '2rem', opacity: 0.9 }}></i>
+                    </div>
+                    <div style={{ marginTop: '2rem', display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', position: 'relative', zIndex: 1 }}>
+                      <div>
+                        <div style={{ fontSize: '2rem', fontWeight: 300, lineHeight: 1 }}>45,200</div>
+                        <div style={{ fontSize: '0.8rem', color: '#9CA3AF' }}>Millas disponibles</div>
+                      </div>
+                      <div style={{ fontSize: '0.8rem', color: 'rgba(255,255,255,0.5)' }}>ID: 991-GLS-X</div>
+                    </div>
+                  </div>
+
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                    {[
+                      { icon: 'fa-id-card', title: 'Información y documentos', desc: 'Pasaporte, visados' },
+                      { icon: 'fa-sliders', title: 'Preferencias de viaje', desc: 'Asientos, comida, aeropuerto' },
+                      { icon: 'fa-credit-card', title: 'Métodos de pago', desc: 'Tarjetas guardadas' },
+                      { icon: 'fa-shield-halved', title: 'Seguridad y Privacidad', desc: 'FaceID, contraseñas' },
+                      { icon: 'fa-headset', title: 'Centro de ayuda', desc: 'Contacto y soporte' }
+                    ].map((item, idx) => (
+                      <div key={idx} style={{ display: 'flex', alignItems: 'center', gap: '1rem', padding: '1.2rem', background: 'rgba(255,255,255,0.05)', backdropFilter: 'blur(10px)', borderRadius: '12px', cursor: 'pointer', border: '1px solid rgba(255,255,255,0.1)' }}>
+                        <div style={{ width: '40px', height: '40px', borderRadius: '50%', background: 'rgba(255,255,255,0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#FFF' }}>
+                          <i className={`fas ${item.icon}`}></i>
+                        </div>
+                        <div style={{ flex: 1 }}>
+                          <div style={{ fontWeight: 600, color: '#FFF' }}>{item.title}</div>
+                          <div style={{ fontSize: '0.8rem', color: '#9CA3AF' }}>{item.desc}</div>
+                        </div>
+                        <i className="fas fa-chevron-right" style={{ color: 'rgba(255,255,255,0.3)' }}></i>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {flightTab === 'BOARDING' && (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+                  <h3 style={{ margin: '0 0 0.5rem 0', fontSize: '1.5rem', fontWeight: 300, letterSpacing: '1px', color: '#FFF' }}>Tus Viajes</h3>
+                  
+                  <div style={{ background: 'rgba(255,255,255,0.05)', backdropFilter: 'blur(15px)', borderRadius: '16px', padding: '1.5rem', border: '1px solid rgba(255,255,255,0.2)', position: 'relative', overflow: 'hidden' }}>
+                    
+                    <div style={{ display: 'inline-block', background: 'rgba(255,255,255,0.1)', border: '1px solid rgba(255,255,255,0.2)', color: '#FFF', fontSize: '0.7rem', fontWeight: 600, padding: '0.3rem 0.6rem', borderRadius: '20px', textTransform: 'uppercase', letterSpacing: '1px', marginBottom: '1.5rem' }}>Próximo Vuelo</div>
+
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem' }}>
+                      <div style={{ display: 'flex', flexDirection: 'column' }}>
+                        <div style={{ fontSize: '2.5rem', fontWeight: 300, lineHeight: 1, color: '#FFF' }}>{flightOrigin.substring(0, 3).toUpperCase()}</div>
+                        <div style={{ fontSize: '0.8rem', color: '#9CA3AF', marginTop: '4px' }}>Madrid</div>
+                      </div>
+                      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', flex: 1, padding: '0 1rem' }}>
+                        <i className="fas fa-plane" style={{ fontSize: '1.5rem', color: 'var(--theme-accent)', marginBottom: '8px' }}></i>
+                        <div style={{ width: '100%', borderBottom: '1px solid rgba(255,255,255,0.2)' }}></div>
+                        <span style={{ fontSize: '0.7rem', color: '#9CA3AF', marginTop: '8px' }}>Directo</span>
+                      </div>
+                      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end' }}>
+                        <div style={{ fontSize: '2.5rem', fontWeight: 300, lineHeight: 1, color: '#FFF' }}>{(flightDest || 'PAR').substring(0, 3).toUpperCase()}</div>
+                        <div style={{ fontSize: '0.8rem', color: '#9CA3AF', marginTop: '4px' }}>{flightDest ? flightDest.split(',')[0] : 'París'}</div>
+                      </div>
+                    </div>
+
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', background: 'rgba(0,0,0,0.2)', padding: '1rem', borderRadius: '12px', marginBottom: '2rem' }}>
+                      <div>
+                        <div style={{ fontSize: '0.7rem', color: '#9CA3AF', textTransform: 'uppercase' }}>Pasajero</div>
+                        <div style={{ fontWeight: 600, color: '#FFF' }}>Usuario VIP</div>
+                      </div>
+                      <div>
+                        <div style={{ fontSize: '0.7rem', color: '#9CA3AF', textTransform: 'uppercase' }}>Fecha</div>
+                        <div style={{ fontWeight: 600, color: '#FFF' }}>{flightDate}</div>
+                      </div>
+                      <div>
+                        <div style={{ fontSize: '0.7rem', color: '#9CA3AF', textTransform: 'uppercase' }}>Vuelo</div>
+                        <div style={{ fontWeight: 600, color: '#FFF' }}>GLS-404</div>
+                      </div>
+                      <div>
+                        <div style={{ fontSize: '0.7rem', color: '#9CA3AF', textTransform: 'uppercase' }}>Asiento</div>
+                        <div style={{ fontWeight: 600, color: '#FFF' }}>{flightClass === 'BUSINESS' ? '2A' : '14C'}</div>
+                      </div>
+                    </div>
+
+                    <div style={{ background: '#FFF', padding: '1rem', borderRadius: '12px', display: 'flex', justifyContent: 'center' }}>
+                      <i className="fas fa-qrcode" style={{ fontSize: '6rem', color: '#000' }}></i>
+                    </div>
+                    
+                    {setTimeout(() => handleFlightObjectiveCheck(), 100) as unknown as null}
+                  </div>
+                </div>
+              )}
+
+              {flightTab === 'EXPLORE' && (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+                  <h3 style={{ margin: '0', fontSize: '1.5rem', fontWeight: 300, letterSpacing: '1px', color: '#FFF' }}>Explorar</h3>
+                  
+                  <div style={{ position: 'relative', borderRadius: '16px', overflow: 'hidden', height: '200px', border: '1px solid rgba(255,255,255,0.2)' }}>
+                    <img src="https://images.unsplash.com/photo-1503899036084-c55cdd92da26?q=80&w=800&auto=format&fit=crop" style={{ width: '100%', height: '100%', objectFit: 'cover' }} alt="Destinos" />
+                    <div style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, background: 'linear-gradient(to top, rgba(0,0,0,0.8), transparent)', display: 'flex', flexDirection: 'column', justifyContent: 'flex-end', padding: '1.5rem' }}>
+                      <div style={{ color: '#FFF', fontSize: '0.8rem', fontWeight: 600, letterSpacing: '2px', textTransform: 'uppercase', marginBottom: '0.2rem' }}>Destino Destacado</div>
+                      <div style={{ color: '#FFF', fontSize: '1.8rem', fontWeight: 300 }}>Tokio, Japón</div>
+                    </div>
+                  </div>
+
+                  <div>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginBottom: '1rem' }}>
+                      <h4 style={{ margin: 0, fontSize: '1.2rem', fontWeight: 300, letterSpacing: '1px', color: '#FFF' }}>Ofertas última hora 🔥</h4>
+                      <span style={{ fontSize: '0.8rem', color: '#38BDF8', cursor: 'pointer' }}>Ver todo</span>
+                    </div>
+                    
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+                      {[
+                        { dest: 'Londres (LHR)', oldPrice: 195, newPrice: 150, discount: '-23%', date: 'Mañana', img: 'https://images.unsplash.com/photo-1533929736458-ca588d08c8be?q=80&w=400&auto=format&fit=crop' },
+                        { dest: 'Roma (FCO)', oldPrice: 220, newPrice: 165, discount: '-25%', date: 'Este finde', img: 'https://images.unsplash.com/photo-1552832230-c0197dd311b5?q=80&w=400&auto=format&fit=crop' },
+                        { dest: 'Berlín (BER)', oldPrice: 150, newPrice: 90, discount: '-40%', date: 'Próx martes', img: 'https://images.unsplash.com/photo-1560969184-10fe8719e047?q=80&w=400&auto=format&fit=crop' },
+                        { dest: 'Nueva York (JFK)', oldPrice: 650, newPrice: 420, discount: '-35%', date: 'Próxima semana', img: 'https://images.unsplash.com/photo-1496442226666-8d4d0e62e6e9?q=80&w=400&auto=format&fit=crop' },
+                        { dest: 'Dubái (DXB)', oldPrice: 580, newPrice: 480, discount: '-17%', date: 'En 3 días', img: 'https://images.unsplash.com/photo-1512453979798-5ea266f8880c?q=80&w=400&auto=format&fit=crop' },
+                        { dest: 'Bali (DPS)', oldPrice: 850, newPrice: 620, discount: '-27%', date: 'Sábado', img: 'https://images.unsplash.com/photo-1537996194471-e657df975ab4?q=80&w=400&auto=format&fit=crop' }
+                      ].map((offer, i) => (
+                        <div key={i} style={{ display: 'flex', background: 'rgba(255,255,255,0.05)', backdropFilter: 'blur(10px)', borderRadius: '12px', overflow: 'hidden', border: '1px solid rgba(255,255,255,0.1)', cursor: 'pointer' }} onClick={() => { setFlightDest(offer.dest); setFlightTab('SEARCH'); setFlightSearchStep('FORM'); }}>
+                          <div style={{ width: '100px', height: '100px' }}>
+                            <img src={offer.img} style={{ width: '100%', height: '100%', objectFit: 'cover' }} alt={offer.dest} />
+                          </div>
+                          <div style={{ padding: '0.8rem', flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
+                            <div>
+                              <div style={{ fontWeight: 600, fontSize: '1.1rem', color: '#FFF' }}>{offer.dest}</div>
+                              <div style={{ fontSize: '0.8rem', color: '#9CA3AF', display: 'flex', alignItems: 'center', gap: '0.3rem', marginTop: '0.2rem' }}>
+                                <i className="far fa-calendar-alt"></i> {offer.date}
+                              </div>
+                            </div>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end' }}>
+                              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                                <span style={{ fontSize: '0.8rem', color: 'rgba(255,255,255,0.4)', textDecoration: 'line-through' }}>{offer.oldPrice}€</span>
+                                <span style={{ fontSize: '1.2rem', fontWeight: 700, color: '#38BDF8' }}>{offer.newPrice}€</span>
+                              </div>
+                              <div style={{ background: 'rgba(239, 68, 68, 0.2)', border: '1px solid rgba(239, 68, 68, 0.5)', color: '#FCA5A5', fontSize: '0.7rem', fontWeight: 600, padding: '0.2rem 0.5rem', borderRadius: '4px' }}>
+                                {offer.discount}
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              )}
+              
+              {flightTab !== 'SEARCH' && flightTab !== 'BOARDING' && flightTab !== 'PROFILE' && flightTab !== 'EXPLORE' && (
+                 <div style={{ padding: '2rem', textAlign: 'center', color: '#9CA3AF' }}>Sección en construcción</div>
+              )}
+            </div>
+
+            <div style={{ flexShrink: 0, display: 'flex', justifyContent: 'space-around', padding: '1rem', background: 'rgba(30, 30, 47, 0.8)', backdropFilter: 'blur(15px)', borderTop: '1px solid rgba(255,255,255,0.1)' }}>
+              <button onClick={() => setFlightTab('SEARCH')} style={{ background: 'none', border: 'none', color: flightTab === 'SEARCH' ? 'var(--theme-accent)' : '#9CA3AF', cursor: 'pointer' }}><i className="fas fa-search"></i><div style={{ fontSize: '0.6rem', marginTop: '4px' }}>Buscar</div></button>
+              <button onClick={() => setFlightTab('EXPLORE')} style={{ background: 'none', border: 'none', color: flightTab === 'EXPLORE' ? 'var(--theme-accent)' : '#9CA3AF', cursor: 'pointer' }}><i className="fas fa-compass"></i><div style={{ fontSize: '0.6rem', marginTop: '4px' }}>Explorar</div></button>
+              <button onClick={() => setFlightTab('BOARDING')} style={{ background: 'none', border: 'none', color: flightTab === 'BOARDING' ? 'var(--theme-accent)' : '#9CA3AF', cursor: 'pointer' }}><i className="fas fa-ticket-simple"></i><div style={{ fontSize: '0.6rem', marginTop: '4px' }}>Viajes</div></button>
+              <button onClick={() => setFlightTab('NOTIFICATIONS')} style={{ background: 'none', border: 'none', color: flightTab === 'NOTIFICATIONS' ? 'var(--theme-accent)' : '#9CA3AF', cursor: 'pointer' }}><i className="fas fa-bell"></i><div style={{ fontSize: '0.6rem', marginTop: '4px' }}>Avisos</div></button>
+              <button onClick={() => setFlightTab('PROFILE')} style={{ background: 'none', border: 'none', color: flightTab === 'PROFILE' ? 'var(--theme-accent)' : '#9CA3AF', cursor: 'pointer' }}><i className="fas fa-user"></i><div style={{ fontSize: '0.6rem', marginTop: '4px' }}>Perfil</div></button>
+            </div>
+          </div>
+        </div>
+      );
+    }
+
+
+    // Brutalist Theme: Floating action buttons, large blocks, neon colors
+    if (version === 2) {
+      return (
+        <div className="flight-app brutal-theme" style={{ display: 'flex', flexDirection: 'column', height: '100%', maxHeight: '100%', background: '#FCDE2D', color: '#000', fontFamily: '"Space Grotesk", "Helvetica Neue", sans-serif', overflow: 'hidden' }}>
+          <div style={{ padding: '1.5rem', borderBottom: '4px solid #000', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', background: '#FCDE2D' }}>
+            <h1 style={{ fontSize: '3rem', fontWeight: 900, textTransform: 'uppercase', margin: 0, lineHeight: 0.9, letterSpacing: '-2px' }}>VUELING</h1>
+            <div style={{ fontWeight: 800, fontSize: '1rem', border: '2px solid #000', padding: '0.25rem 0.5rem', transform: 'rotate(-3deg)', background: '#D9F99D', boxShadow: '2px 2px 0px #000' }}>EST. 2026</div>
+          </div>
+          
+          <div style={{ flex: 1, overflowY: 'auto', padding: '1.5rem', paddingBottom: '90px' }}>
+            {flightTab === 'SEARCH' && flightSearchStep === 'FORM' && (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+                <div style={{ display: 'flex', border: '4px solid #000', background: '#FFF', boxShadow: '4px 4px 0px #000' }}>
+                  <button onClick={() => setFlightTripType('IDA_VUELTA')} style={{ flex: 1, padding: '1rem', background: flightTripType === 'IDA_VUELTA' ? '#000' : 'transparent', color: flightTripType === 'IDA_VUELTA' ? '#FFF' : '#000', border: 'none', borderRight: '4px solid #000', fontWeight: 900, fontSize: '1.1rem', cursor: 'pointer', textTransform: 'uppercase' }}>IDA Y VUELTA</button>
+                  <button onClick={() => setFlightTripType('SOLO_IDA')} style={{ flex: 1, padding: '1rem', background: flightTripType === 'SOLO_IDA' ? '#000' : 'transparent', color: flightTripType === 'SOLO_IDA' ? '#FFF' : '#000', border: 'none', fontWeight: 900, fontSize: '1.1rem', cursor: 'pointer', textTransform: 'uppercase' }}>SOLO IDA</button>
+                </div>
+                
+                <div style={{ border: '4px solid #000', padding: '1rem 1.5rem', background: '#FFF', boxShadow: '6px 6px 0px #000', position: 'relative' }}>
+                  <div style={{ position: 'absolute', top: '-14px', left: '16px', background: '#000', color: '#FFF', padding: '4px 12px', fontWeight: 800, fontSize: '0.85rem', letterSpacing: '1px' }}>FROM</div>
+                  <input type="text" value={flightOrigin} readOnly style={{ width: '100%', background: 'transparent', border: 'none', color: '#000', fontSize: '2rem', fontWeight: 900, outline: 'none', textTransform: 'uppercase', letterSpacing: '-1px', marginTop: '0.5rem' }} />
+                </div>
+
+                <div style={{ border: '4px solid #000', padding: '1rem 1.5rem', background: '#D9F99D', boxShadow: '6px 6px 0px #000', position: 'relative' }}>
+                  <div style={{ position: 'absolute', top: '-14px', left: '16px', background: '#000', color: '#FFF', padding: '4px 12px', fontWeight: 800, fontSize: '0.85rem', letterSpacing: '1px' }}>TO</div>
+                  <input type="text" value={flightDest} onChange={(e) => setFlightDest(e.target.value)} placeholder="WHERE TO?" style={{ width: '100%', background: 'transparent', border: 'none', color: '#000', fontSize: '2rem', fontWeight: 900, outline: 'none', textTransform: 'uppercase', letterSpacing: '-1px', marginTop: '0.5rem' }} />
+                </div>
+                
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+                  <div style={{ flex: 1, padding: '1rem', background: '#FFF', border: '4px solid #000', boxShadow: '4px 4px 0px #000', position: 'relative', cursor: 'pointer' }} onClick={(e) => { const i = e.currentTarget.querySelector('input'); if(i && i.showPicker) { try { i.showPicker() } catch(err){} } }}>
+                    <div style={{ position: 'absolute', top: '-12px', left: '10px', background: '#000', color: '#FFF', padding: '2px 8px', fontWeight: 800, fontSize: '0.7rem' }}>DEPART</div>
+                    <input type="date" value={flightDate} onChange={(e) => setFlightDate(e.target.value)} onClick={(e) => { e.stopPropagation(); try { if ((e.target as any).showPicker) (e.target as any).showPicker(); } catch(err){} }} style={{ width: '100%', minWidth: 0, border: 'none', background: 'transparent', fontSize: '1.2rem', fontWeight: 900, outline: 'none', color: '#000', cursor: 'pointer', padding: 0, marginTop: '0.5rem' }} />
+                  </div>
+                  {flightTripType === 'IDA_VUELTA' && (
+                    <div style={{ flex: 1, padding: '1rem', background: '#FFF', border: '4px solid #000', boxShadow: '4px 4px 0px #000', position: 'relative', cursor: 'pointer' }} onClick={(e) => { const i = e.currentTarget.querySelector('input'); if(i && i.showPicker) { try { i.showPicker() } catch(err){} } }}>
+                      <div style={{ position: 'absolute', top: '-12px', left: '10px', background: '#000', color: '#FFF', padding: '2px 8px', fontWeight: 800, fontSize: '0.7rem' }}>RETURN</div>
+                      <input type="date" value={flightReturnDate} onChange={(e) => setFlightReturnDate(e.target.value)} onClick={(e) => { e.stopPropagation(); try { if ((e.target as any).showPicker) (e.target as any).showPicker(); } catch(err){} }} style={{ width: '100%', minWidth: 0, border: 'none', background: 'transparent', fontSize: '1.2rem', fontWeight: 900, outline: 'none', color: '#000', cursor: 'pointer', padding: 0, marginTop: '0.5rem' }} />
+                    </div>
+                  )}
+                </div>
+
+                <div style={{ display: 'flex', gap: '1rem' }}>
+                  <div style={{ flex: 1, padding: '1rem', background: '#FFF', border: '4px solid #000', boxShadow: '4px 4px 0px #000', position: 'relative' }}>
+                    <div style={{ position: 'absolute', top: '-12px', left: '10px', background: '#000', color: '#FFF', padding: '2px 8px', fontWeight: 800, fontSize: '0.7rem' }}>PASSENGERS</div>
+                    <select value={flightPassengers} onChange={e => setFlightPassengers(Number(e.target.value))} style={{ width: '100%', border: 'none', background: 'transparent', fontSize: '1.2rem', fontWeight: 900, outline: 'none', color: '#000', padding: 0, marginTop: '0.5rem', textTransform: 'uppercase' }}>
+                      {[1,2,3,4,5].map(n => <option key={n} value={n}>{n} PAX</option>)}
+                    </select>
+                  </div>
+                  <div style={{ flex: 1, padding: '1rem', background: '#FFF', border: '4px solid #000', boxShadow: '4px 4px 0px #000', position: 'relative' }}>
+                    <div style={{ position: 'absolute', top: '-12px', left: '10px', background: '#000', color: '#FFF', padding: '2px 8px', fontWeight: 800, fontSize: '0.7rem' }}>CLASS</div>
+                    <select value={flightClass} onChange={e => setFlightClass(e.target.value as any)} style={{ width: '100%', border: 'none', background: 'transparent', fontSize: '1.2rem', fontWeight: 900, outline: 'none', color: '#000', padding: 0, marginTop: '0.5rem', textTransform: 'uppercase' }}>
+                      <option value="TURISTA">ECO</option>
+                      <option value="BUSINESS">BIZ</option>
+                    </select>
+                  </div>
+                </div>
+
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '1.5rem', background: flightBaggageAdded ? '#A5B4FC' : '#FFF', border: '4px solid #000', boxShadow: '6px 6px 0px #000', cursor: 'pointer' }} onClick={() => setFlightBaggageAdded(!flightBaggageAdded)}>
+                  <div style={{ display: 'flex', flexDirection: 'column' }}>
+                    <span style={{ fontSize: '1.2rem', fontWeight: 900, textTransform: 'uppercase' }}>BAGGAGE (20KG)</span>
+                    <span style={{ fontSize: '1rem', fontWeight: 800, color: flightBaggageAdded ? '#000' : '#6B7280' }}>{flightBaggageAdded ? 'ADDED [+35€]' : 'OPTIONAL [+35€]'}</span>
+                  </div>
+                  <div style={{ width: '32px', height: '32px', border: '4px solid #000', background: flightBaggageAdded ? '#000' : '#FFF', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                    {flightBaggageAdded && <i className="fas fa-check" style={{ color: '#FFF' }}></i>}
+                  </div>
+                </div>
+
+                <button onClick={() => setFlightSearchStep('RESULTS')} style={{ width: '100%', padding: '1.5rem', background: '#000', color: '#FFF', border: 'none', fontSize: '2rem', fontWeight: 900, cursor: 'pointer', textTransform: 'uppercase', marginTop: '1rem', boxShadow: '6px 6px 0px #FCA5A5', letterSpacing: '2px' }}>SEARCH FLIGHTS</button>
+              </div>
+            )}
+
+            {flightTab === 'SEARCH' && flightSearchStep === 'RESULTS' && (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+                <button onClick={() => setFlightSearchStep('FORM')} style={{ background: 'none', border: 'none', color: '#000', display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer', padding: '0', fontSize: '1.2rem', fontWeight: 900, textTransform: 'uppercase' }}>
+                  <i className="fas fa-arrow-left"></i> EDIT SEARCH
+                </button>
+                <div style={{ background: '#FFF', border: '4px solid #000', padding: '1.5rem', boxShadow: '6px 6px 0px #000' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <div style={{ fontSize: '1.5rem', fontWeight: 900, textTransform: 'uppercase' }}>{flightOrigin.split(' ')[0]} <i className="fas fa-plane" style={{ margin: '0 0.5rem' }}></i> {flightDest || 'PARIS'}</div>
+                  </div>
+                  <div style={{ fontSize: '1rem', fontWeight: 800, marginTop: '0.5rem', borderTop: '2px dashed #000', paddingTop: '0.5rem' }}>
+                    {flightDate} {flightTripType === 'IDA_VUELTA' ? ` / ${flightReturnDate}` : ''} | {flightPassengers} PAX | {flightClass === 'BUSINESS' ? 'BIZ' : 'ECO'}
+                  </div>
+                </div>
+                
+                <h3 style={{ fontSize: '1.5rem', margin: '1rem 0 0 0', fontWeight: 900, textTransform: 'uppercase', background: '#000', color: '#FFF', display: 'inline-block', padding: '0.25rem 0.5rem' }}>DEPARTURE</h3>
+                
+                {[
+                  { id: 1, start: '06:15', end: '09:00', dur: '2H 45M', stops: 'DIRECT', price: flightClass === 'BUSINESS' ? 320 : 85 },
+                  { id: 2, start: '08:30', end: '11:15', dur: '2H 45M', stops: 'DIRECT', price: flightClass === 'BUSINESS' ? 350 : 120 },
+                  { id: 3, start: '10:00', end: '13:30', dur: '3H 30M', stops: '1 STOP', price: flightClass === 'BUSINESS' ? 290 : 75 },
+                  { id: 4, start: '14:00', end: '16:45', dur: '2H 45M', stops: 'DIRECT', price: flightClass === 'BUSINESS' ? 380 : 160 },
+                  { id: 5, start: '18:20', end: '21:05', dur: '2H 45M', stops: 'DIRECT', price: flightClass === 'BUSINESS' ? 340 : 110 },
+                  { id: 6, start: '21:45', end: '00:30', dur: '2H 45M', stops: 'DIRECT', price: flightClass === 'BUSINESS' ? 280 : 65 },
+                ].map(f => (
+                  <div key={f.id} style={{ background: '#FFF', padding: '1.5rem', display: 'flex', flexDirection: 'column', gap: '1.5rem', border: '4px solid #000', boxShadow: '6px 6px 0px #000' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                      <div style={{ display: 'flex', gap: '1.5rem', alignItems: 'center' }}>
+                        <div style={{ display: 'flex', flexDirection: 'column' }}>
+                          <div style={{ fontWeight: 900, fontSize: '1.8rem', lineHeight: 1 }}>{f.start}</div>
+                          <div style={{ fontSize: '1rem', fontWeight: 800, color: '#6B7280' }}>{flightOrigin.substring(0, 3).toUpperCase()}</div>
+                        </div>
+                        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', width: '60px' }}>
+                          <span style={{ fontSize: '0.8rem', fontWeight: 800 }}>{f.dur}</span>
+                          <div style={{ height: '4px', width: '100%', background: '#000', position: 'relative', margin: '4px 0' }}><i className="fas fa-plane" style={{ position: 'absolute', right: '-8px', top: '-7px', fontSize: '1rem', color: '#000' }}></i></div>
+                          <span style={{ fontSize: '0.8rem', fontWeight: 800, color: f.stops === 'DIRECT' ? '#000' : '#DC2626' }}>{f.stops}</span>
+                        </div>
+                        <div style={{ display: 'flex', flexDirection: 'column' }}>
+                          <div style={{ fontWeight: 900, fontSize: '1.8rem', lineHeight: 1 }}>{f.end}</div>
+                          <div style={{ fontSize: '1rem', fontWeight: 800, color: '#6B7280' }}>{(flightDest || 'PAR').substring(0, 3).toUpperCase()}</div>
+                        </div>
+                      </div>
+                      <div style={{ fontSize: '2rem', fontWeight: 900, background: '#D9F99D', padding: '0.2rem 0.5rem', border: '2px solid #000' }}>{f.price + (flightBaggageAdded ? 35 : 0)}€</div>
+                    </div>
+                    <button onClick={() => setFlightSearchStep('CHECKOUT')} style={{ background: '#000', color: '#FFF', border: 'none', padding: '1rem', fontWeight: 900, fontSize: '1.2rem', textTransform: 'uppercase', cursor: 'pointer', letterSpacing: '1px' }}>SELECT FLIGHT</button>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {flightTab === 'SEARCH' && flightSearchStep === 'CHECKOUT' && (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+                <button onClick={() => setFlightSearchStep('RESULTS')} style={{ background: 'none', border: 'none', color: '#000', display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer', padding: '0', fontSize: '1.2rem', fontWeight: 900, textTransform: 'uppercase' }}>
+                  <i className="fas fa-arrow-left"></i> CHANGE FLIGHT
+                </button>
+                <div style={{ background: '#FFF', padding: '1.5rem', border: '4px solid #000', boxShadow: '6px 6px 0px #000' }}>
+                  <h3 style={{ margin: '0 0 1rem 0', fontSize: '1.5rem', fontWeight: 900, textTransform: 'uppercase', borderBottom: '4px solid #000', paddingBottom: '0.5rem' }}>ORDER SUMMARY</h3>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.5rem', fontWeight: 800, fontSize: '1.1rem' }}>
+                    <span>BASE FARE</span>
+                    <span>120€</span>
+                  </div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.5rem', fontWeight: 800, fontSize: '1.1rem' }}>
+                    <span>TAXES</span>
+                    <span>15€</span>
+                  </div>
+                  {flightBaggageAdded && (
+                    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.5rem', fontWeight: 800, fontSize: '1.1rem' }}>
+                      <span>BAGGAGE</span>
+                      <span>35€</span>
+                    </div>
+                  )}
+                  <div style={{ display: 'flex', justifyContent: 'space-between', fontWeight: 900, fontSize: '1.8rem', background: '#D9F99D', padding: '1rem', border: '4px solid #000', marginTop: '1rem' }}>
+                    <span>TOTAL</span>
+                    <span>{135 + (flightBaggageAdded ? 35 : 0)}€</span>
+                  </div>
+                </div>
+
+                <div style={{ background: '#FFF', padding: '1.5rem', border: '4px solid #000', boxShadow: '6px 6px 0px #000' }}>
+                  <h3 style={{ margin: '0 0 1rem 0', fontSize: '1.5rem', fontWeight: 900, textTransform: 'uppercase' }}>PAYMENT</h3>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+                    <div onClick={() => setFlightPaymentMethod('CARD')} style={{ display: 'flex', alignItems: 'center', gap: '1rem', padding: '1rem', border: '4px solid #000', background: flightPaymentMethod === 'CARD' ? '#A5B4FC' : '#FFF', cursor: 'pointer' }}>
+                      <i className="fas fa-credit-card" style={{ fontSize: '2rem' }}></i>
+                      <div>
+                        <div style={{ fontWeight: 900, fontSize: '1.2rem', textTransform: 'uppercase' }}>CREDIT CARD</div>
+                        <div style={{ fontSize: '0.9rem', fontWeight: 800 }}>VISA / MC / AMEX</div>
+                      </div>
+                    </div>
+                    <div onClick={() => setFlightPaymentMethod('PAYPAL')} style={{ display: 'flex', alignItems: 'center', gap: '1rem', padding: '1rem', border: '4px solid #000', background: flightPaymentMethod === 'PAYPAL' ? '#FCA5A5' : '#FFF', cursor: 'pointer' }}>
+                      <i className="fab fa-paypal" style={{ fontSize: '2rem' }}></i>
+                      <div>
+                        <div style={{ fontWeight: 900, fontSize: '1.2rem', textTransform: 'uppercase' }}>PAYPAL</div>
+                        <div style={{ fontSize: '0.9rem', fontWeight: 800 }}>SECURE CHECKOUT</div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <button onClick={() => { setFlightBooked(true); setTimeout(() => handleFlightObjectiveCheck(), 100); }} style={{ padding: '1.5rem', background: '#000', color: '#FFF', border: 'none', fontSize: '1.8rem', fontWeight: 900, cursor: 'pointer', display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '1rem', boxShadow: '6px 6px 0px #A5B4FC', letterSpacing: '1px' }}>
+                  <i className="fas fa-lock"></i> PAY SECURELY
+                </button>
+              </div>
+            )}
+
+            {flightTab === 'PROFILE' && (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+                <div style={{ background: '#FCA5A5', border: '4px solid #000', padding: '1.5rem', color: '#000', boxShadow: '6px 6px 0px #000' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                    <div>
+                      <div style={{ fontSize: '1rem', fontWeight: 900, textTransform: 'uppercase', background: '#000', color: '#FFF', display: 'inline-block', padding: '0.2rem 0.5rem' }}>VIP MEMBER</div>
+                      <div style={{ fontSize: '2rem', fontWeight: 900, marginTop: '0.5rem', textTransform: 'uppercase' }}>DEMO USER</div>
+                    </div>
+                    <i className="fas fa-certificate" style={{ fontSize: '3rem' }}></i>
+                  </div>
+                  <div style={{ marginTop: '2rem', display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between' }}>
+                    <div>
+                      <div style={{ fontSize: '3rem', fontWeight: 900, lineHeight: 1 }}>45,200</div>
+                      <div style={{ fontSize: '1rem', fontWeight: 800, textTransform: 'uppercase' }}>AVAILABLE MILES</div>
+                    </div>
+                    <div style={{ fontSize: '1rem', fontWeight: 900, border: '2px solid #000', padding: '0.2rem 0.5rem' }}>ID: 991-X</div>
+                  </div>
+                </div>
+
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+                  {[
+                    { icon: 'fa-id-card', title: 'DOCUMENTS', desc: 'PASSPORT & VISAS', bg: '#D9F99D' },
+                    { icon: 'fa-sliders', title: 'PREFERENCES', desc: 'SEATS & MEALS', bg: '#A5B4FC' },
+                    { icon: 'fa-credit-card', title: 'PAYMENT', desc: 'SAVED CARDS', bg: '#FFF' },
+                    { icon: 'fa-shield-halved', title: 'SECURITY', desc: 'PASSWORDS & 2FA', bg: '#FFF' },
+                    { icon: 'fa-headset', title: 'SUPPORT', desc: 'HELP CENTER', bg: '#FFF' }
+                  ].map((item, idx) => (
+                    <div key={idx} style={{ display: 'flex', alignItems: 'center', gap: '1rem', padding: '1.5rem', background: item.bg, border: '4px solid #000', boxShadow: '4px 4px 0px #000', cursor: 'pointer' }}>
+                      <i className={`fas ${item.icon}`} style={{ fontSize: '2rem' }}></i>
+                      <div style={{ flex: 1, marginLeft: '0.5rem' }}>
+                        <div style={{ fontWeight: 900, fontSize: '1.2rem', textTransform: 'uppercase' }}>{item.title}</div>
+                        <div style={{ fontSize: '0.8rem', fontWeight: 800 }}>{item.desc}</div>
+                      </div>
+                      <i className="fas fa-arrow-right" style={{ fontSize: '1.5rem' }}></i>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {flightTab === 'BOARDING' && (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+                <h3 style={{ margin: '0', fontSize: '2rem', fontWeight: 900, textTransform: 'uppercase', background: '#000', color: '#FFF', display: 'inline-block', padding: '0.25rem 0.5rem' }}>MY TRIPS</h3>
+                
+                <div style={{ background: '#FFF', border: '4px solid #000', padding: '1.5rem', boxShadow: '8px 8px 0px #000', position: 'relative' }}>
+                  
+                  <div style={{ display: 'inline-block', background: '#D9F99D', border: '4px solid #000', color: '#000', fontSize: '1rem', fontWeight: 900, padding: '0.3rem 0.6rem', textTransform: 'uppercase', marginBottom: '1.5rem' }}>UPCOMING FLIGHT</div>
+
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem' }}>
+                    <div style={{ display: 'flex', flexDirection: 'column' }}>
+                      <div style={{ fontSize: '3rem', fontWeight: 900, lineHeight: 1 }}>{flightOrigin.substring(0, 3).toUpperCase()}</div>
+                      <div style={{ fontSize: '1rem', fontWeight: 800, marginTop: '4px' }}>MADRID</div>
+                    </div>
+                    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', flex: 1, padding: '0 1rem' }}>
+                      <i className="fas fa-plane" style={{ fontSize: '2rem', marginBottom: '8px' }}></i>
+                      <div style={{ width: '100%', borderBottom: '4px dashed #000' }}></div>
+                      <span style={{ fontSize: '1rem', fontWeight: 900, marginTop: '8px' }}>DIRECT</span>
+                    </div>
+                    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end' }}>
+                      <div style={{ fontSize: '3rem', fontWeight: 900, lineHeight: 1 }}>{(flightDest || 'PAR').substring(0, 3).toUpperCase()}</div>
+                      <div style={{ fontSize: '1rem', fontWeight: 800, marginTop: '4px' }}>{flightDest ? flightDest.split(',')[0].toUpperCase() : 'PARIS'}</div>
+                    </div>
+                  </div>
+
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0', background: '#A5B4FC', border: '4px solid #000', marginBottom: '2rem' }}>
+                    <div style={{ padding: '1rem', borderBottom: '4px solid #000', borderRight: '4px solid #000' }}>
+                      <div style={{ fontSize: '0.8rem', fontWeight: 900, textTransform: 'uppercase' }}>PASSENGER</div>
+                      <div style={{ fontWeight: 900, fontSize: '1.2rem' }}>DEMO USER</div>
+                    </div>
+                    <div style={{ padding: '1rem', borderBottom: '4px solid #000' }}>
+                      <div style={{ fontSize: '0.8rem', fontWeight: 900, textTransform: 'uppercase' }}>DATE</div>
+                      <div style={{ fontWeight: 900, fontSize: '1.2rem' }}>{flightDate}</div>
+                    </div>
+                    <div style={{ padding: '1rem', borderRight: '4px solid #000' }}>
+                      <div style={{ fontSize: '0.8rem', fontWeight: 900, textTransform: 'uppercase' }}>FLIGHT</div>
+                      <div style={{ fontWeight: 900, fontSize: '1.2rem' }}>BRU-404</div>
+                    </div>
+                    <div style={{ padding: '1rem' }}>
+                      <div style={{ fontSize: '0.8rem', fontWeight: 900, textTransform: 'uppercase' }}>SEAT</div>
+                      <div style={{ fontWeight: 900, fontSize: '1.2rem' }}>{flightClass === 'BUSINESS' ? '1A' : '12B'}</div>
+                    </div>
+                  </div>
+
+                  <div style={{ background: '#FFF', padding: '1rem', border: '4px solid #000', display: 'flex', justifyContent: 'center' }}>
+                    <i className="fas fa-qrcode" style={{ fontSize: '8rem', color: '#000' }}></i>
+                  </div>
+                  
+                  {setTimeout(() => handleFlightObjectiveCheck(), 100) as unknown as null}
+                </div>
+              </div>
+            )}
+
+            {flightTab === 'EXPLORE' && (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+                <h3 style={{ margin: '0', fontSize: '2rem', fontWeight: 900, textTransform: 'uppercase', background: '#000', color: '#FFF', display: 'inline-block', padding: '0.25rem 0.5rem' }}>EXPLORE</h3>
+                
+                <div style={{ border: '4px solid #000', position: 'relative', overflow: 'hidden', height: '250px', boxShadow: '6px 6px 0px #000', background: '#FCA5A5' }}>
+                  <img src="https://images.unsplash.com/photo-1503899036084-c55cdd92da26?q=80&w=800&auto=format&fit=crop" style={{ width: '100%', height: '100%', objectFit: 'cover', filter: 'contrast(1.2)' }} alt="Destinos" />
+                  <div style={{ position: 'absolute', top: '10px', left: '10px', background: '#D9F99D', border: '4px solid #000', padding: '0.25rem 0.5rem', fontWeight: 900, textTransform: 'uppercase' }}>TOP DESTINATION</div>
+                  <div style={{ position: 'absolute', bottom: '10px', right: '10px', background: '#000', color: '#FFF', padding: '0.5rem 1rem', fontSize: '2rem', fontWeight: 900, textTransform: 'uppercase' }}>TOKYO</div>
+                </div>
+
+                <div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginBottom: '1.5rem' }}>
+                    <h4 style={{ margin: 0, fontSize: '1.5rem', fontWeight: 900, textTransform: 'uppercase' }}>LAST MINUTE DEALS</h4>
+                  </div>
+                  
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+                    {[
+                      { dest: 'LONDON (LHR)', oldPrice: 195, newPrice: 150, discount: '23% OFF', date: 'TOMORROW', img: 'https://images.unsplash.com/photo-1533929736458-ca588d08c8be?q=80&w=400&auto=format&fit=crop' },
+                      { dest: 'ROME (FCO)', oldPrice: 220, newPrice: 165, discount: '25% OFF', date: 'THIS WKND', img: 'https://images.unsplash.com/photo-1552832230-c0197dd311b5?q=80&w=400&auto=format&fit=crop' },
+                      { dest: 'BERLIN (BER)', oldPrice: 150, newPrice: 90, discount: '40% OFF', date: 'NEXT TUE', img: 'https://images.unsplash.com/photo-1560969184-10fe8719e047?q=80&w=400&auto=format&fit=crop' },
+                      { dest: 'NEW YORK (JFK)', oldPrice: 650, newPrice: 420, discount: '35% OFF', date: 'NEXT WK', img: 'https://images.unsplash.com/photo-1496442226666-8d4d0e62e6e9?q=80&w=400&auto=format&fit=crop' },
+                      { dest: 'DUBAI (DXB)', oldPrice: 580, newPrice: 480, discount: '17% OFF', date: 'IN 3 DAYS', img: 'https://images.unsplash.com/photo-1512453979798-5ea266f8880c?q=80&w=400&auto=format&fit=crop' },
+                      { dest: 'BALI (DPS)', oldPrice: 850, newPrice: 620, discount: '27% OFF', date: 'SATURDAY', img: 'https://images.unsplash.com/photo-1537996194471-e657df975ab4?q=80&w=400&auto=format&fit=crop' }
+                    ].map((offer, i) => (
+                      <div key={i} style={{ display: 'flex', background: '#FFF', border: '4px solid #000', boxShadow: '6px 6px 0px #000', cursor: 'pointer' }} onClick={() => { setFlightDest(offer.dest); setFlightTab('SEARCH'); setFlightSearchStep('FORM'); }}>
+                        <div style={{ width: '120px', borderRight: '4px solid #000' }}>
+                          <img src={offer.img} style={{ width: '100%', height: '100%', objectFit: 'cover' }} alt={offer.dest} />
+                        </div>
+                        <div style={{ padding: '1rem', flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
+                          <div>
+                            <div style={{ fontWeight: 900, fontSize: '1.2rem', textTransform: 'uppercase' }}>{offer.dest}</div>
+                            <div style={{ fontSize: '0.9rem', fontWeight: 800, marginTop: '0.2rem', background: '#000', color: '#FFF', display: 'inline-block', padding: '0.1rem 0.4rem' }}>
+                              {offer.date}
+                            </div>
+                          </div>
+                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginTop: '1rem' }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                              <span style={{ fontSize: '1rem', fontWeight: 800, textDecoration: 'line-through', color: '#6B7280' }}>{offer.oldPrice}€</span>
+                              <span style={{ fontSize: '1.5rem', fontWeight: 900 }}>{offer.newPrice}€</span>
+                            </div>
+                            <div style={{ background: '#FCA5A5', border: '2px solid #000', fontWeight: 900, padding: '0.2rem 0.5rem', fontSize: '0.8rem' }}>
+                              {offer.discount}
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {flightTab !== 'SEARCH' && flightTab !== 'BOARDING' && flightTab !== 'PROFILE' && flightTab !== 'EXPLORE' && (
+              <div style={{ border: '4px solid #000', background: '#000', color: '#FFF', padding: '3rem 1.5rem', textAlign: 'center', boxShadow: '6px 6px 0px #FCA5A5' }}>
+                <h2 style={{ fontSize: '4rem', fontWeight: 900, margin: 0, lineHeight: 1 }}>404</h2>
+                <p style={{ fontWeight: 800, textTransform: 'uppercase', letterSpacing: '2px', margin: '1rem 0 0 0' }}>SECTION NOT FOUND</p>
+              </div>
+            )}
+          </div>
+
+          <div style={{ flexShrink: 0, height: '80px', display: 'grid', gridTemplateColumns: '1fr 1fr 1fr 1fr 1fr', gap: '0', borderTop: '4px solid #000', background: '#000' }}>
+            <button onClick={() => setFlightTab('SEARCH')} style={{ height: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', background: flightTab === 'SEARCH' ? '#FFF' : '#000', color: flightTab === 'SEARCH' ? '#000' : '#FFF', border: 'none', borderRight: '4px solid #000', fontSize: '1.2rem', cursor: 'pointer' }}><i className="fas fa-search"></i><span style={{ fontSize: '0.6rem', fontWeight: 900, marginTop: '4px' }}>SEARCH</span></button>
+            <button onClick={() => setFlightTab('EXPLORE')} style={{ height: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', background: flightTab === 'EXPLORE' ? '#FFF' : '#000', color: flightTab === 'EXPLORE' ? '#000' : '#FFF', border: 'none', borderRight: '4px solid #000', fontSize: '1.2rem', cursor: 'pointer' }}><i className="fas fa-compass"></i><span style={{ fontSize: '0.6rem', fontWeight: 900, marginTop: '4px' }}>EXPLORE</span></button>
+            <button onClick={() => setFlightTab('BOARDING')} style={{ height: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', background: flightTab === 'BOARDING' ? '#FFF' : '#000', color: flightTab === 'BOARDING' ? '#000' : '#FFF', border: 'none', borderRight: '4px solid #000', fontSize: '1.2rem', cursor: 'pointer' }}><i className="fas fa-ticket-simple"></i><span style={{ fontSize: '0.6rem', fontWeight: 900, marginTop: '4px' }}>TRIPS</span></button>
+            <button onClick={() => setFlightTab('NOTIFICATIONS')} style={{ height: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', background: flightTab === 'NOTIFICATIONS' ? '#FFF' : '#000', color: flightTab === 'NOTIFICATIONS' ? '#000' : '#FFF', border: 'none', borderRight: '4px solid #000', fontSize: '1.2rem', cursor: 'pointer' }}><i className="fas fa-bell"></i><span style={{ fontSize: '0.6rem', fontWeight: 900, marginTop: '4px' }}>ALERTS</span></button>
+            <button onClick={() => setFlightTab('PROFILE')} style={{ height: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', background: flightTab === 'PROFILE' ? '#FFF' : '#000', color: flightTab === 'PROFILE' ? '#000' : '#FFF', border: 'none', fontSize: '1.2rem', cursor: 'pointer' }}><i className="fas fa-user"></i><span style={{ fontSize: '0.6rem', fontWeight: 900, marginTop: '4px' }}>PROFILE</span></button>
+          </div>
+        </div>
+      );
+    }
+
+    
+    return null;
+  };
+
   // Extract navigation items so they render sticky at the bottom / top
   const topNavComponents  = screen?.components.filter(c => c.type === 'TOP_NAV_SOCIAL') || [];
   const bottomNavComponents = screen?.components.filter(c => c.type === 'NAV_BAR_BOTTOM') || [];
@@ -1874,14 +3008,14 @@ export default function App() {
                       <button
                         key={num}
                         onClick={() => {
-                          if (num >= 5) {
+                          if (num >= 6) {
                             alert('Funcionalidad próximamente disponible');
                           } else {
                             setLevel(num);
                           }
                         }}
                         className={`menu-level-btn ${level === num ? 'active' : ''}`}
-                        style={{ opacity: num >= 5 ? 0.5 : 1, cursor: num >= 5 ? 'not-allowed' : 'pointer' }}
+                        style={{ opacity: num >= 6 ? 0.5 : 1, cursor: num >= 6 ? 'not-allowed' : 'pointer' }}
                       >
                         {num}
                       </button>
@@ -1940,6 +3074,8 @@ export default function App() {
                 renderBankingApp()
               ) : screen.appTemplate === 'CLOCK' ? (
                 renderClockApp()
+              ) : screen.appTemplate === 'FLIGHTS' ? (
+                renderFlightApp()
               ) : (
                 <>
                   {/* TOP NAV — Social Network fixed header */}
@@ -2344,18 +3480,36 @@ export default function App() {
 
             {/* Persistent Floating Assistive "Ver Objetivo" Button inside phone - FOR ALL APPS */}
             {!showObjective && !success && screen && (
-              <button 
-                className="floating-objective-btn"
-                onClick={() => {
-                  setPendingScreen(screen);
-                  setShowObjective(true);
-                }}
-                title="Ver objetivo de la misión"
-                aria-label="Ver objetivo de la misión"
-              >
-                <i className="fas fa-bullseye"></i>
-                <span>Ver Objetivo</span>
-              </button>
+              <>
+                <button 
+                  className="floating-objective-btn"
+                  onClick={() => {
+                    setPendingScreen(screen);
+                    setShowObjective(true);
+                  }}
+                  title="Ver objetivo de la misión"
+                  aria-label="Ver objetivo de la misión"
+                >
+                  <i className="fas fa-bullseye"></i>
+                  <span>Ver Objetivo</span>
+                </button>
+
+                {/* DEV ONLY: Botón temporal para rotar interfaz */}
+                <button 
+                  className="floating-objective-btn"
+                  style={{ top: '60%', background: 'linear-gradient(135deg, #F59E0B 0%, #D97706 100%)' }}
+                  onClick={() => {
+                    const numVersions = getVersionsCountForLevel(level);
+                    const nextVer = (currentVerIndex + 1) % numVersions;
+                    fetchScreen(level, nextVer, currentObjIndex);
+                  }}
+                  title="Rotar Interfaz (Dev)"
+                  aria-label="Rotar Interfaz"
+                >
+                  <i className="fas fa-sync-alt"></i>
+                  <span>Rotar Interfaz</span>
+                </button>
+              </>
             )}
 
             <div className="home-indicator"></div>
