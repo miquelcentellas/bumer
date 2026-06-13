@@ -1,6 +1,6 @@
 @use 'sass:color';
-@import 'variables';
-@import 'mixins';
+@use 'variables' as *;
+@use 'mixins' as *;
 
 // Simulator wrapper (centers phone mockup on desktop screen)
 .bumer-dashboard {
@@ -27,7 +27,7 @@
   display: none;
 
   .panel-header {
-    background: linear-gradient(135deg, $bumer-card 0%, darken($bumer-card, 4%) 100%);
+    background: linear-gradient(135deg, $bumer-card 0%, color.adjust($bumer-card, $lightness: -4%) 100%);
     border: 1px solid $bumer-border;
     border-radius: 16px;
     padding: 1.5rem;
@@ -79,7 +79,7 @@
       gap: 0.75rem;
 
       .level-btn {
-        background: darken($bumer-card, 6%);
+        background: color.adjust($bumer-card, $lightness: -6%);
         border: 1px solid $bumer-border;
         border-radius: 10px;
         color: $bumer-text-muted;
@@ -92,7 +92,7 @@
         &:hover {
           color: $bumer-text;
           border-color: color.adjust($bumer-border, $lightness: 10%);
-          background: darken($bumer-card, 3%);
+          background: color.adjust($bumer-card, $lightness: -3%);
         }
 
         &.active {
