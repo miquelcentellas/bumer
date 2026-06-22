@@ -1,6 +1,19 @@
 import React, { useState, useEffect } from 'react';
 import { ProceduralScreen, UIComponent } from '@bumer/shared-types';
 
+const APP_CATEGORIES = [
+  { id: 1, name: 'Redes Sociales', icon: 'fa-users', color: '#4F46E5', desc: 'Añadir amigos, interactuar y configurar privacidad.' },
+  { id: 2, name: 'Reloj', icon: 'fa-clock', color: '#BB86FC', desc: 'Gestionar alarmas, cronómetros y zonas horarias.' },
+  { id: 3, name: 'Comida a domicilio', icon: 'fa-utensils', color: '#EA580C', desc: 'Selección rápida de menús y personalización de pedidos.' },
+  { id: 4, name: 'Banco', icon: 'fa-wallet', color: '#059669', desc: 'Realizar transferencias y Bizum de forma segura.' },
+  { id: 5, name: 'App de Vuelos', icon: 'fa-plane', color: '#2563EB', desc: 'Buscar itinerarios, escalas y pases de abordar.' },
+];
+
+const getAppNameForLevel = (lv: number): string => {
+  const cat = APP_CATEGORIES.find(c => c.id === lv);
+  return cat ? cat.name : `Aplicación ${lv}`;
+};
+
 export default function App() {
   const [appState, setAppState] = useState<'MAIN_MENU' | 'PLAYING'>('MAIN_MENU');
   const [level, setLevel] = useState<number>(1);
@@ -2992,28 +3005,35 @@ export default function App() {
                     <div className="logo-icon"><i className="fas fa-brain"></i></div>
                     <h1>BÚMER</h1>
                   </div>
-                  <p>Entrenamiento cognitivo interactivo</p>
                 </div>
                 
-                <div className="level-selection-container">
-                  <h3>Nivel de Complejidad</h3>
-                  <div className="level-grid">
-                    {[1, 2, 3, 4, 5, 6, 7, 8, 9].map((num) => (
-                      <button
-                        key={num}
-                        onClick={() => {
-                          if (num >= 6) {
-                            alert('Funcionalidad próximamente disponible');
-                          } else {
-                            setLevel(num);
-                          }
-                        }}
-                        className={`menu-level-btn ${level === num ? 'active' : ''}`}
-                        style={{ opacity: num >= 6 ? 0.5 : 1, cursor: num >= 6 ? 'not-allowed' : 'pointer' }}
-                      >
-                        {num}
-                      </button>
-                    ))}
+                <div className="dashboard-selection-container">
+                  <h3>Selecciona que tipo de <br />App quieres practicar:</h3>
+                  <div className="dashboard-grid">
+                    {APP_CATEGORIES.map((cat) => {
+                      const isActive = level === cat.id;
+                      return (
+                        <div
+                          key={cat.id}
+                          onClick={() => setLevel(cat.id)}
+                          className={`dashboard-card ${isActive ? `active active-${cat.id}` : ''}`}
+                        >
+                          <div 
+                            className="card-icon-wrapper" 
+                            style={{ 
+                              background: `linear-gradient(135deg, ${cat.color} 0%, ${cat.color}CC 100%)` 
+                            }}
+                          >
+                            <i className={`fas ${cat.icon}`}></i>
+                          </div>
+                          <div className="card-content">
+                            <h4>{cat.name}</h4>
+                            <p>{cat.desc}</p>
+                          </div>
+                          <i className="fas fa-chevron-right card-chevron"></i>
+                        </div>
+                      );
+                    })}
                   </div>
                 </div>
                 
@@ -3422,7 +3442,7 @@ export default function App() {
                     <div className="objective-content-group">
                       {pendingScreen && !objectiveLoading && (
                         <div className="objective-meta-header">
-                          <span className="objective-level-badge">Nivel {pendingScreen.complexityLevel}</span>
+                          <span className="objective-level-badge">{getAppNameForLevel(pendingScreen.complexityLevel)}</span>
                           <span className="objective-template">{pendingScreen.appTemplate}</span>
                         </div>
                       )}
